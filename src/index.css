@@ -37,3 +37,7 @@ body {
     padding: 12px !important;
   }
 }
+
+a[data-pin-do] {
+  max-width: 100%;
+}
