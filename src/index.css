@@ -6,3 +6,34 @@
 body {
   margin: 0;
 }
+ /* === Responsive: tablet y móvil === */
+@media (max-width: 900px) {
+  /* la app se vuelve columna */
+  .appShell {
+    flex-direction: column;
+  }
+
+  /* sidebar pasa a “barra superior” */
+  .sidebar {
+    width: 100% !important;
+    border-right: none !important;
+    border-bottom: 1px solid #e7e5e4;
+  }
+
+  /* menos padding en contenido */
+  .content {
+    padding: 16px !important;
+  }
+
+  /* grid de 2 columnas pasa a 1 */
+  .grid2 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 520px) {
+  /* aún más compacto en celular */
+  .content {
+    padding: 12px !important;
+  }
+}

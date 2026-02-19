@@ -1,25 +1,6 @@
-/**
- * App.jsx (anotado)
- * ------------------------------------------------------------
- * Idea general:
- * - Esto es una SPA (Single Page App) en React SIN react-router.
- * - La “navegación” se hace con un estado `active` que decide qué componente se renderiza.
- * - Persistencia: usamos localStorage para que tareas/prioridades/notas se queden aunque cierres el navegador.
- * - UI: usamos estilos inline en el objeto `styles` para un look Notion/iOS.
- */
 
 import { useMemo, useState, useEffect } from "react";
 
-/**
- * PAGES = “catálogo” de pantallas.
- * - id: identificador interno para comparar (active === "today", etc.)
- * - name: nombre mostrado en el header
- * - icon: icono para el botón de la sidebar
- *
- * Ventaja:
- * - No hardcodeas botones, los generas con .map()
- * - Si agregas una nueva pantalla, solo agregas un objeto aquí.
- */
 const PAGES = [
   { id: "today", name: "Hoy", icon: "✨" },
   { id: "tasks", name: "Tareas", icon: "✅" },
@@ -54,9 +35,9 @@ export default function App() {
    */
 
   return (
-    <div style={styles.app}>
+    <div style={styles.app} className="appShell">
       {/* ============== SIDEBAR (navegación) ============== */}
-      <aside style={styles.sidebar}>
+      <aside style={styles.sidebar} className="sidebar">
         {/* Branding / “logo” */}
         <div style={styles.brand}>
           <div style={styles.brandIcon}>💗</div>
@@ -99,13 +80,13 @@ export default function App() {
         <header style={styles.header}>
           <div>
             <div style={styles.pageTitle}>{activePage?.name ?? "Página"}</div>
-            <div style={styles.pageSubtitle}>Organizador texto de ejemplo</div>
+            <div style={styles.pageSubtitle}>Organizador</div>
           </div>
         </header>
 
         {/* Render condicional (router casero):
             Solo se monta el componente que coincide con `active`. */}
-        <section style={styles.content}>
+        <section style={styles.content} className="content">
           {active === "today" && <Today />}
           {active === "tasks" && <Tasks />}
           {active === "notes" && <Notes />}
@@ -233,7 +214,7 @@ function Today() {
       </Block>
 
       {/* Grid en 2 columnas: Prioridades + Nota rápida */}
-      <div style={styles.grid2}>
+      <div style={styles.grid2} className="grid2">
         {/* ================= Top 3 Prioridades (con drag & drop) ================= */}
         <Block
           title="Top 3 prioridades"
@@ -520,7 +501,7 @@ function Tasks() {
 }
 
 /* ============================================================
-   PÁGINA: Notes (placeholder)
+   SECCION: Notes (placeholder)
    ------------------------------------------------------------
    Por ahora solo muestra texto. Después puedes convertirlo
    en un CRUD de notas como en Notion.
@@ -539,7 +520,7 @@ function Notes() {
 }
 
 /* ============================================================
-   PÁGINA: Memories (placeholder)
+   SECCION: Memories (placeholder)
    ------------------------------------------------------------
    Aquí luego puedes meter upload de fotos + texto
    (con localStorage o ya con Firebase Storage).
@@ -555,7 +536,7 @@ function Memories() {
 }
 
 /* ============================================================
-   PÁGINA: Pinterest (embed de boards públicos)
+   SECCION: Pinterest (embed de boards públicos)
    ------------------------------------------------------------
    Idea:
    - boards: lista de boards públicos con name + url
