@@ -1,17 +1,13 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { STORAGE_KEYS } from "../../app/config.js";
+import { renderWithWorkspace } from "../../test/renderWithWorkspace.jsx";
 import Notes from "../Notes.jsx";
 
-function readNotes() {
-  return JSON.parse(localStorage.getItem(STORAGE_KEYS.notes) ?? "[]");
-}
-
 describe("Notas", () => {
-  it("crea, edita, fija, recupera y elimina una nota", async () => {
+  it("crea, edita, fija y elimina una nota compartida", async () => {
     const user = userEvent.setup();
-    const { unmount } = render(<Notes />);
+    renderWithWorkspace(<Notes />);
 
     await user.click(screen.getByRole("button", { name: "Nueva nota" }));
 
@@ -24,17 +20,6 @@ describe("Notas", () => {
     );
     await user.click(screen.getByRole("button", { name: "Fijar" }));
 
-    await waitFor(() => {
-      expect(readNotes()[0]).toMatchObject({
-        title: "Carta especial",
-        content: "Una nota que debe seguir aquí después de recargar.",
-        pinned: true,
-      });
-    });
-
-    unmount();
-    render(<Notes />);
-
     expect(screen.getByRole("textbox", { name: "Título" })).toHaveValue("Carta especial");
     expect(screen.getByRole("textbox", { name: "Contenido" })).toHaveValue(
       "Una nota que debe seguir aquí después de recargar.",
@@ -45,7 +30,6 @@ describe("Notas", () => {
     await user.click(screen.getByRole("button", { name: "Eliminar" }));
 
     expect(confirm).toHaveBeenCalledWith(expect.stringContaining("Carta especial"));
-    expect(readNotes()).toEqual([]);
     expect(screen.getByText("Aún no hay notas")).toBeInTheDocument();
   });
 });

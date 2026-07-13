@@ -172,6 +172,66 @@ input[type="checkbox"] {
   accent-color: var(--accent);
 }
 
+.syncStatus {
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 0 12px auto;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid rgba(40, 127, 149, 0.2);
+  border-radius: 13px;
+  background: rgba(230, 250, 255, 0.76);
+  color: var(--accent-text);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  font-size: 12px;
+}
+
+.syncStatusError {
+  width: 100%;
+  border-color: rgba(185, 28, 28, 0.2);
+  background: rgba(255, 241, 242, 0.82);
+  color: #991b1b;
+}
+
+.syncStatusMessage,
+.syncStatusActions,
+.syncStatusActions button {
+  display: inline-flex;
+  align-items: center;
+}
+
+.syncStatusMessage {
+  min-width: 0;
+  gap: 7px;
+}
+
+.syncStatusActions {
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.syncStatusActions button {
+  min-height: 30px;
+  padding: 6px 8px;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid rgba(153, 27, 27, 0.18);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.58);
+  color: inherit;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.syncSpinner {
+  animation: auth-spin 850ms linear infinite;
+}
+
 @media (pointer: fine) {
   html,
   body,

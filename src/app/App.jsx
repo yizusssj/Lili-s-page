@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useAuth } from "../auth/authContext.js";
 import Sidebar from "../components/Sidebar.jsx";
+import SyncStatus from "../components/SyncStatus.jsx";
 import Memories from "../pages/Memories.jsx";
 import Notes from "../pages/Notes.jsx";
 import Pinterest from "../pages/Pinterest.jsx";
@@ -43,6 +44,7 @@ export default function App() {
         )}
 
         <section style={styles.content} className="content">
+          <SyncStatus />
           <ActivePage />
         </section>
       </main>

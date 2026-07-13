@@ -1,18 +1,30 @@
 import { useMemo, useState } from "react";
-import { CircleCheckBig, NotebookPen, Pin, Plus, Search } from "lucide-react";
-import { STORAGE_KEYS } from "../app/config.js";
+import {
+  CircleCheckBig,
+  LoaderCircle,
+  NotebookPen,
+  Pin,
+  Plus,
+  Search,
+} from "lucide-react";
 import { styles } from "../app/styles.jsx";
 import Block from "../components/Block.jsx";
 import SectionTitle from "../components/SectionTitle.jsx";
 import { formatNoteDate } from "../utils/date.js";
-import { isNoteList } from "../utils/models.js";
-import { readJSON, writeJSON } from "../utils/storage.js";
+import { useWorkspace } from "../workspace/workspaceContext.js";
 
 export default function Notes() {
-  const [notes, setNotes] = useState(() => readJSON(STORAGE_KEYS.notes, [], isNoteList));
+  const {
+    createNote,
+    notes,
+    removeNote,
+    saving,
+    syncError,
+    updateNoteDraft,
+  } = useWorkspace();
   const [selectedId, setSelectedId] = useState(null);
   const [query, setQuery] = useState("");
-  const [storageStatus, setStorageStatus] = useState("idle");
+  const [creating, setCreating] = useState(false);
 
   const visibleNotes = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase("es-MX");
@@ -30,45 +42,28 @@ export default function Notes() {
   const selectedNote =
     visibleNotes.find((note) => note.id === selectedId) ?? visibleNotes[0] ?? null;
 
-  function saveNotes(nextNotes) {
-    setNotes(nextNotes);
-    setStorageStatus(writeJSON(STORAGE_KEYS.notes, nextNotes) ? "saved" : "error");
-  }
-
-  function createNote() {
-    const now = new Date().toISOString();
-    const note = {
-      id: crypto.randomUUID(),
-      title: "Nueva nota",
-      content: "",
-      pinned: false,
-      createdAt: now,
-      updatedAt: now,
-    };
-    saveNotes([note, ...notes]);
-    setSelectedId(note.id);
+  async function handleCreateNote() {
+    if (creating) return;
+    setCreating(true);
+    const note = await createNote();
+    if (note) setSelectedId(note.id);
     setQuery("");
+    setCreating(false);
   }
 
   function updateSelectedNote(fields) {
     if (!selectedNote) return;
-    saveNotes(
-      notes.map((note) =>
-        note.id === selectedNote.id
-          ? { ...note, ...fields, updatedAt: new Date().toISOString() }
-          : note,
-      ),
-    );
+    updateNoteDraft(selectedNote.id, fields);
   }
 
-  function deleteSelectedNote() {
+  async function deleteSelectedNote() {
     if (!selectedNote) return;
     const label = selectedNote.title.trim() || "Sin título";
     if (!window.confirm(`¿Eliminar la nota “${label}”? Esta acción no se puede deshacer.`)) return;
 
     const nextNotes = notes.filter((note) => note.id !== selectedNote.id);
-    saveNotes(nextNotes);
     setSelectedId(nextNotes[0]?.id ?? null);
+    await removeNote(selectedNote.id);
   }
 
   return (
@@ -76,9 +71,14 @@ export default function Notes() {
       <Block
         title={<SectionTitle icon={NotebookPen} label="Notas" color="#1d4ed8" />}
         right={
-          <button type="button" style={styles.primaryBtnSmall} onClick={createNote}>
+          <button
+            type="button"
+            style={styles.primaryBtnSmall}
+            onClick={() => void handleCreateNote()}
+            disabled={creating}
+          >
             <Plus aria-hidden="true" size={15} strokeWidth={1.9} />
-            Nueva nota
+            {creating ? "Creando..." : "Nueva nota"}
           </button>
         }
       >
@@ -164,6 +164,7 @@ export default function Notes() {
                 value={selectedNote.title}
                 onChange={(event) => updateSelectedNote({ title: event.target.value })}
                 placeholder="Título de la nota"
+                maxLength={200}
                 style={styles.input}
               />
 
@@ -175,6 +176,7 @@ export default function Notes() {
                 value={selectedNote.content}
                 onChange={(event) => updateSelectedNote({ content: event.target.value })}
                 placeholder="Escribe tu nota..."
+                maxLength={100000}
                 rows={14}
                 style={styles.noteTextarea}
               />
@@ -194,7 +196,11 @@ export default function Notes() {
                   />
                   {selectedNote.pinned ? "Desfijar" : "Fijar"}
                 </button>
-                <button type="button" style={styles.dangerBtn} onClick={deleteSelectedNote}>
+                <button
+                  type="button"
+                  style={styles.dangerBtn}
+                  onClick={() => void deleteSelectedNote()}
+                >
                   Eliminar
                 </button>
               </div>
@@ -203,15 +209,26 @@ export default function Notes() {
                 <span>Modificada: {formatNoteDate(selectedNote.updatedAt)}</span>
                 <span
                   aria-live="polite"
-                  style={{ color: storageStatus === "error" ? "#b91c1c" : "#15803d" }}
+                  style={{ color: syncError ? "#b91c1c" : "#15803d" }}
                 >
-                  {storageStatus === "saved" && (
+                  {saving && !syncError && (
                     <span style={styles.statusWithIcon}>
-                      <CircleCheckBig aria-hidden="true" size={13} strokeWidth={1.8} />
-                      Guardado automático
+                      <LoaderCircle
+                        aria-hidden="true"
+                        className="syncSpinner"
+                        size={13}
+                        strokeWidth={1.8}
+                      />
+                      Guardando...
                     </span>
                   )}
-                  {storageStatus === "error" && "No se pudo guardar en este navegador"}
+                  {!saving && !syncError && (
+                    <span style={styles.statusWithIcon}>
+                      <CircleCheckBig aria-hidden="true" size={13} strokeWidth={1.8} />
+                      Sincronizado
+                    </span>
+                  )}
+                  {syncError && "Pendiente de sincronizar"}
                 </span>
               </div>
             </div>
@@ -219,9 +236,14 @@ export default function Notes() {
             <div style={styles.emptyState}>
               <div style={{ fontWeight: 650 }}>Selecciona o crea una nota</div>
               <div style={styles.p}>El editor aparecerá aquí.</div>
-              <button type="button" style={styles.primaryBtnSmall} onClick={createNote}>
+              <button
+                type="button"
+                style={styles.primaryBtnSmall}
+                onClick={() => void handleCreateNote()}
+                disabled={creating}
+              >
                 <Plus aria-hidden="true" size={15} strokeWidth={1.9} />
-                Crear mi primera nota
+                {creating ? "Creando..." : "Crear mi primera nota"}
               </button>
             </div>
           )}

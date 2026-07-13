@@ -1,33 +1,28 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ListTodo, Plus, Sparkles, Trash2 } from "lucide-react";
-import { STORAGE_KEYS } from "../app/config.js";
 import { styles } from "../app/styles.jsx";
 import Block from "../components/Block.jsx";
 import SectionTitle from "../components/SectionTitle.jsx";
-import { createTasks, isItemList } from "../utils/models.js";
-import { readJSON, writeJSON } from "../utils/storage.js";
+import { useWorkspace } from "../workspace/workspaceContext.js";
 
 export default function Tasks() {
+  const {
+    addTask,
+    clearCompletedTasks,
+    removeTask,
+    tasks,
+    toggleTask,
+  } = useWorkspace();
   const [newTask, setNewTask] = useState("");
-  const [tasks, setTasks] = useState(() =>
-    readJSON(STORAGE_KEYS.tasks, createTasks(), isItemList),
-  );
+  const [adding, setAdding] = useState(false);
 
-  useEffect(() => {
-    writeJSON(STORAGE_KEYS.tasks, tasks);
-  }, [tasks]);
-
-  function addTask() {
+  async function handleAddTask() {
     const text = newTask.trim();
-    if (!text) return;
-    setTasks((previous) => [{ id: crypto.randomUUID(), text, done: false }, ...previous]);
-    setNewTask("");
-  }
-
-  function toggleTask(id) {
-    setTasks((previous) =>
-      previous.map((task) => (task.id === id ? { ...task, done: !task.done } : task)),
-    );
+    if (!text || adding) return;
+    setAdding(true);
+    const saved = await addTask(text);
+    if (saved) setNewTask("");
+    setAdding(false);
   }
 
   const remaining = tasks.filter((task) => !task.done).length;
@@ -38,10 +33,10 @@ export default function Tasks() {
         title={<SectionTitle icon={ListTodo} label="Tareas" color="#047857" />}
         right={
           <button
-            type="button"
-            style={styles.ghostBtn}
-            onClick={() => setTasks((previous) => previous.filter((task) => !task.done))}
-          >
+              type="button"
+              style={styles.ghostBtn}
+              onClick={() => void clearCompletedTasks()}
+            >
             Limpiar hechas
           </button>
         }
@@ -55,14 +50,20 @@ export default function Tasks() {
             value={newTask}
             onChange={(event) => setNewTask(event.target.value)}
             onKeyDown={(event) => {
-              if (event.key === "Enter") addTask();
+              if (event.key === "Enter") void handleAddTask();
             }}
             placeholder="Agregar tarea..."
+            maxLength={500}
             style={styles.input}
           />
-          <button type="button" style={styles.primaryBtnSmall} onClick={addTask}>
+          <button
+            type="button"
+            style={styles.primaryBtnSmall}
+            onClick={() => void handleAddTask()}
+            disabled={adding}
+          >
             <Plus aria-hidden="true" size={15} strokeWidth={1.9} />
-            Añadir
+            {adding ? "Añadiendo..." : "Añadir"}
           </button>
         </div>
 
@@ -83,7 +84,7 @@ export default function Tasks() {
                   <input
                     type="checkbox"
                     checked={task.done}
-                    onChange={() => toggleTask(task.id)}
+                    onChange={() => void toggleTask(task.id)}
                     aria-label={`${task.done ? "Desmarcar" : "Marcar"} ${task.text}`}
                     style={{ width: 16, height: 16 }}
                   />
@@ -100,7 +101,7 @@ export default function Tasks() {
 
                 <button
                   type="button"
-                  onClick={() => setTasks((previous) => previous.filter((item) => item.id !== task.id))}
+                  onClick={() => void removeTask(task.id)}
                   style={styles.iconBtn}
                   className="glassIconButton"
                   title="Eliminar"

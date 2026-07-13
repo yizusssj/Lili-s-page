@@ -7,18 +7,17 @@ import {
   GripVertical,
   Sun,
 } from "lucide-react";
-import { STORAGE_KEYS } from "../app/config.js";
 import { styles } from "../app/styles.jsx";
 import Block from "../components/Block.jsx";
 import SectionTitle from "../components/SectionTitle.jsx";
-import { getLocalDateKey } from "../utils/date.js";
-import { createPriorities, isPriorityList } from "../utils/models.js";
-import { readJSON, readText, writeJSON, writeText } from "../utils/storage.js";
+import { useWorkspace } from "../workspace/workspaceContext.js";
 
 function QuickNote() {
-  const [text, setText] = useState(() => readText(STORAGE_KEYS.quickNote));
+  const { quickNote, saveQuickNote } = useWorkspace();
+  const [draft, setDraft] = useState(null);
   const [saveStatus, setSaveStatus] = useState("idle");
   const statusTimeout = useRef(null);
+  const text = draft ?? quickNote;
 
   useEffect(
     () => () => {
@@ -27,8 +26,10 @@ function QuickNote() {
     [],
   );
 
-  function save() {
-    const wasSaved = writeText(STORAGE_KEYS.quickNote, text);
+  async function save() {
+    setSaveStatus("saving");
+    const wasSaved = await saveQuickNote(text);
+    if (wasSaved) setDraft(null);
     setSaveStatus(wasSaved ? "saved" : "error");
     window.clearTimeout(statusTimeout.current);
     statusTimeout.current = window.setTimeout(() => setSaveStatus("idle"), 1800);
@@ -41,14 +42,20 @@ function QuickNote() {
         aria-label="Nota rápida"
         placeholder="Escribe algo..."
         value={text}
-        onChange={(event) => setText(event.target.value)}
+        onChange={(event) => setDraft(event.target.value)}
+        maxLength={10000}
         style={styles.textarea}
         rows={6}
       />
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}>
-        <button type="button" style={styles.primaryBtn} onClick={save}>
-          Guardar
+        <button
+          type="button"
+          style={styles.primaryBtn}
+          onClick={() => void save()}
+          disabled={saveStatus === "saving"}
+        >
+          {saveStatus === "saving" ? "Guardando..." : "Guardar"}
         </button>
         <span
           aria-live="polite"
@@ -68,27 +75,13 @@ function QuickNote() {
 }
 
 export default function Today() {
-  const [items, setItems] = useState(() => {
-    const today = getLocalDateKey();
-    const lastDate = readText(STORAGE_KEYS.todayDate);
-    let initial = readJSON(
-      STORAGE_KEYS.todayPriorities,
-      createPriorities(),
-      isPriorityList,
-    );
-
-    if (lastDate !== today) {
-      initial = initial.map((item) => ({ ...item, done: false }));
-      writeText(STORAGE_KEYS.todayDate, today);
-      writeJSON(STORAGE_KEYS.todayPriorities, initial);
-    }
-
-    return initial;
-  });
-
-  useEffect(() => {
-    writeJSON(STORAGE_KEYS.todayPriorities, items);
-  }, [items]);
+  const {
+    movePriority,
+    priorities: items,
+    resetPriorities,
+    togglePriority,
+    updatePriorityText,
+  } = useWorkspace();
 
   useEffect(() => {
     let timeoutId;
@@ -99,43 +92,14 @@ export default function Today() {
       const delay = nextMidnight.getTime() - now.getTime() + 100;
 
       timeoutId = window.setTimeout(() => {
-        setItems((previous) => previous.map((item) => ({ ...item, done: false })));
-        writeText(STORAGE_KEYS.todayDate, getLocalDateKey());
+        resetPriorities();
         scheduleNextDay();
       }, delay);
     }
 
     scheduleNextDay();
     return () => window.clearTimeout(timeoutId);
-  }, []);
-
-  function toggle(id) {
-    setItems((previous) =>
-      previous.map((item) => (item.id === id ? { ...item, done: !item.done } : item)),
-    );
-  }
-
-  function updateText(id, text) {
-    setItems((previous) =>
-      previous.map((item) => (item.id === id ? { ...item, text } : item)),
-    );
-  }
-
-  function resetToday() {
-    setItems((previous) => previous.map((item) => ({ ...item, done: false })));
-    writeText(STORAGE_KEYS.todayDate, getLocalDateKey());
-  }
-
-  function moveItem(from, to) {
-    if (to < 0 || to >= items.length || from === to) return;
-
-    setItems((previous) => {
-      const copy = [...previous];
-      const [moved] = copy.splice(from, 1);
-      copy.splice(to, 0, moved);
-      return copy;
-    });
-  }
+  }, [resetPriorities]);
 
   return (
     <div style={styles.stack}>
@@ -152,7 +116,7 @@ export default function Today() {
             <button
               type="button"
               style={styles.ghostBtn}
-              onClick={resetToday}
+              onClick={resetPriorities}
               title="Reinicia checks de hoy"
             >
               Reiniciar hoy
@@ -177,7 +141,7 @@ export default function Today() {
                 onDrop={(event) => {
                   event.preventDefault();
                   const from = Number(event.dataTransfer.getData("text/plain"));
-                  if (!Number.isNaN(from)) moveItem(from, index);
+                  if (!Number.isNaN(from)) movePriority(from, index);
                 }}
               >
                 <span aria-hidden="true" style={styles.dragHandle} title="Arrastra para reordenar">
@@ -188,15 +152,16 @@ export default function Today() {
                   <input
                     type="checkbox"
                     checked={item.done}
-                    onChange={() => toggle(item.id)}
+                    onChange={() => togglePriority(item.id)}
                     aria-label={`${item.done ? "Desmarcar" : "Marcar"} ${item.text || `prioridad ${index + 1}`}`}
                     style={{ width: 16, height: 16 }}
                   />
                   <input
                     value={item.text}
-                    onChange={(event) => updateText(item.id, event.target.value)}
+                    onChange={(event) => updatePriorityText(item.id, event.target.value)}
                     aria-label={`Texto de prioridad ${index + 1}`}
                     placeholder={`Prioridad ${index + 1}`}
+                    maxLength={500}
                     style={{
                       ...styles.inlineInput,
                       textDecoration: item.done ? "line-through" : "none",
@@ -210,7 +175,7 @@ export default function Today() {
                     type="button"
                     style={styles.moveBtn}
                     className="glassIconButton"
-                    onClick={() => moveItem(index, index - 1)}
+                    onClick={() => movePriority(index, index - 1)}
                     disabled={index === 0}
                     aria-label={`Mover ${item.text || `prioridad ${index + 1}`} hacia arriba`}
                   >
@@ -220,7 +185,7 @@ export default function Today() {
                     type="button"
                     style={styles.moveBtn}
                     className="glassIconButton"
-                    onClick={() => moveItem(index, index + 1)}
+                    onClick={() => movePriority(index, index + 1)}
                     disabled={index === items.length - 1}
                     aria-label={`Mover ${item.text || `prioridad ${index + 1}`} hacia abajo`}
                   >

@@ -33,3 +33,18 @@ Después sigue este orden:
 5. Ejecuta `verify_shared_workspace.sql` para comprobar las seis tablas, las veinticuatro políticas y los miembros.
 
 `owner` y `member` siguen siendo usuarios normales de Supabase con el rol técnico `authenticated`. El rol `owner` solo permite administrar miembros dentro de Lili's Workspace; nunca utiliza `service_role` ni una clave secreta en el navegador.
+
+## Activar el guardado compartido en la aplicación
+
+Después de crear el workspace y su owner, ejecuta una sola vez `migrations/20260712234000_initialize_shared_data.sql`.
+
+Esta migración:
+
+- añade una marca remota para importar `localStorage` una sola vez;
+- evita duplicados si se abre la aplicación en dos dispositivos al mismo tiempo;
+- crea `initialize_workspace_data`, que realiza la importación en una transacción;
+- crea `save_workspace_priorities`, que guarda las tres posiciones de forma consistente.
+
+En el primer inicio posterior a la migración, la cuenta `owner` inicializa el workspace. Si ya existía contenido remoto, se conserva. Desde ese momento Supabase es la fuente principal y `localStorage` queda únicamente como copia local del último estado cargado.
+
+Vuelve a ejecutar `verify_shared_workspace.sql` para comprobar que la columna y las dos funciones nuevas existen. Después del primer inicio, `data_initialized_at` debe contener una fecha.
