@@ -20,9 +20,10 @@
   --text-muted: #716977;
   --text-faint: #918897;
 
-  --accent: #8f2940;
-  --accent-dark: #6f1d35;
-  --accent-gradient: linear-gradient(145deg, #a13b52 0%, #7b233b 100%);
+  --accent: #9fe4f5;
+  --accent-dark: #287f95;
+  --accent-text: #173f49;
+  --accent-gradient: #9fe4f5;
 
   --shadow-navigation:
     0 24px 70px rgba(65, 44, 79, 0.15),
@@ -32,8 +33,8 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.68);
   --shadow-soft: 0 14px 40px rgba(63, 43, 75, 0.1);
   --shadow-accent:
-    0 12px 28px rgba(111, 29, 53, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    0 12px 28px rgba(51, 160, 187, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 *,
@@ -135,7 +136,7 @@ button:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
 a:focus-visible {
-  outline: 3px solid rgba(126, 34, 206, 0.72) !important;
+  outline: 3px solid rgba(40, 127, 149, 0.68) !important;
   outline-offset: 3px;
 }
 
@@ -154,10 +155,10 @@ textarea {
 
 input:focus,
 textarea:focus {
-  border-color: rgba(143, 41, 64, 0.3) !important;
+  border-color: rgba(40, 127, 149, 0.42) !important;
   background: rgba(255, 255, 255, 0.82) !important;
   box-shadow:
-    0 0 0 4px rgba(143, 41, 64, 0.08),
+    0 0 0 4px rgba(159, 228, 245, 0.24),
     inset 0 1px 0 rgba(255, 255, 255, 0.82) !important;
 }
 
@@ -169,6 +170,39 @@ textarea::placeholder {
 
 input[type="checkbox"] {
   accent-color: var(--accent);
+}
+
+@media (pointer: fine) {
+  html,
+  body,
+  .appShell {
+    cursor: url("/cursors/moon-default.svg") 3 3, auto;
+  }
+
+  button,
+  a,
+  [role="button"],
+  input[type="checkbox"],
+  .navItem,
+  .noteCard,
+  .boardTab {
+    cursor: url("/cursors/moon-pointer.svg") 8 8, pointer !important;
+  }
+
+  input:not([type="checkbox"]),
+  textarea {
+    cursor: text !important;
+  }
+
+  [draggable="true"],
+  .dragHandle {
+    cursor: grab !important;
+  }
+
+  [draggable="true"]:active,
+  .dragHandle:active {
+    cursor: grabbing !important;
+  }
 }
 
 .brandPanel,
@@ -255,17 +289,17 @@ input[type="checkbox"] {
 
 .noteCardActive {
   box-shadow:
-    0 10px 28px rgba(111, 29, 53, 0.12),
+    0 10px 28px rgba(51, 160, 187, 0.16),
     inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
 }
 
 .glassIconButton:hover:not(:disabled) {
-  color: var(--accent) !important;
+  color: var(--accent-dark) !important;
   background: rgba(255, 255, 255, 0.76) !important;
 }
 
 .boardTabActive {
-  color: #fff;
+  color: var(--accent-text);
 }
 
 .srOnly {
@@ -295,6 +329,245 @@ a[data-pin-do] {
   max-width: 100% !important;
 }
 
+.authShell {
+  width: 100%;
+  min-height: 100vh;
+  padding: 24px;
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: var(--text-primary);
+  background:
+    radial-gradient(circle at 17% 18%, rgba(159, 228, 245, 0.4), transparent 32%),
+    radial-gradient(circle at 84% 20%, rgba(190, 157, 235, 0.3), transparent 34%),
+    radial-gradient(circle at 70% 88%, rgba(239, 155, 191, 0.23), transparent 31%),
+    linear-gradient(
+      138deg,
+      var(--background-start) 0%,
+      var(--background-middle) 52%,
+      var(--background-end) 100%
+    );
+}
+
+.authShell::before,
+.authShell::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  border-radius: 999px;
+  pointer-events: none;
+  filter: blur(18px);
+}
+
+.authShell::before {
+  width: 330px;
+  height: 330px;
+  top: -90px;
+  right: -70px;
+  background: linear-gradient(145deg, rgba(159, 228, 245, 0.64), rgba(172, 135, 225, 0.38));
+  box-shadow: 0 0 95px rgba(77, 169, 198, 0.2);
+}
+
+.authShell::after {
+  width: 270px;
+  height: 270px;
+  bottom: -95px;
+  left: -50px;
+  background: linear-gradient(145deg, rgba(236, 157, 190, 0.35), rgba(159, 228, 245, 0.48));
+  box-shadow: 0 0 90px rgba(126, 105, 194, 0.18);
+}
+
+.authCard {
+  width: min(100%, 430px);
+  padding: 30px;
+  border: 1px solid var(--glass-border);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.58);
+  box-shadow:
+    0 28px 80px rgba(63, 43, 75, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  -webkit-backdrop-filter: blur(26px) saturate(145%);
+  backdrop-filter: blur(26px) saturate(145%);
+}
+
+.authBrand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.authLogo {
+  width: 50px;
+  height: 50px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.84);
+  border-radius: 17px;
+  color: #276f81;
+  background: rgba(159, 228, 245, 0.56);
+  box-shadow:
+    0 12px 30px rgba(51, 160, 187, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.authEyebrow {
+  margin-bottom: 3px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.authCard h1 {
+  margin: 0;
+  font-size: 25px;
+  font-weight: 780;
+  letter-spacing: -0.03em;
+}
+
+.authIntro,
+.authStatusCard p {
+  margin: 18px 0 22px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.authForm {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.authForm label {
+  margin-top: 3px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.authField {
+  min-height: 48px;
+  padding: 0 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--control-border);
+  border-radius: 15px;
+  color: var(--text-muted);
+  background: var(--glass-control-strong);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.74);
+  transition:
+    border-color 170ms ease,
+    box-shadow 170ms ease,
+    background-color 170ms ease;
+}
+
+.authField:focus-within {
+  border-color: rgba(40, 127, 149, 0.42);
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow:
+    0 0 0 4px rgba(159, 228, 245, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+.authField input {
+  width: 100%;
+  min-width: 0;
+  padding: 12px 0;
+  border: 0;
+  outline: 0;
+  color: var(--text-primary);
+  background: transparent !important;
+  box-shadow: none !important;
+  font-size: 14px;
+}
+
+.authPasswordToggle {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  color: var(--text-muted);
+  background: transparent;
+  cursor: pointer;
+}
+
+.authPasswordToggle:hover:not(:disabled) {
+  color: var(--accent-dark);
+  background: rgba(159, 228, 245, 0.28);
+}
+
+.authSubmit {
+  width: 100%;
+  margin-top: 8px;
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 15px;
+  color: var(--accent-text);
+  background: var(--accent-gradient);
+  box-shadow: var(--shadow-accent);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 760;
+}
+
+.authError {
+  padding: 10px 12px;
+  border: 1px solid rgba(190, 18, 60, 0.2);
+  border-radius: 12px;
+  color: #9f1239;
+  background: rgba(255, 241, 242, 0.72);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.authPrivacy {
+  margin-top: 20px;
+  padding-top: 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-top: 1px solid rgba(255, 255, 255, 0.66);
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.authStatusCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.authStatusCard p {
+  margin-bottom: 0;
+}
+
+.authSpinner {
+  animation: auth-spin 900ms linear infinite;
+}
+
+.accountEmail {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@keyframes auth-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @supports not (backdrop-filter: blur(1px)) {
   :root {
     --glass-navigation: rgba(250, 247, 250, 0.96);
@@ -318,6 +591,7 @@ a[data-pin-do] {
   .brandPanel,
   .brandIcon,
   .sidebarFooter,
+  .authCard,
   .glassRow,
   .noteCard,
   .glassIconButton,
@@ -416,6 +690,19 @@ a[data-pin-do] {
 }
 
 @media (max-width: 520px) {
+  .authShell {
+    padding: 14px;
+  }
+
+  .authCard {
+    padding: 23px 19px;
+    border-radius: 23px;
+  }
+
+  .authCard h1 {
+    font-size: 22px;
+  }
+
   .sidebar,
   .appHeader,
   .glassBlock {
