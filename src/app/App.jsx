@@ -1,5 +1,22 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ArrowDown,
+  ArrowUp,
+  Camera,
+  CircleCheckBig,
+  Flower2,
+  GripVertical,
+  Heart,
+  ListTodo,
+  NotebookPen,
+  Pin,
+  Plus,
+  Search,
+  Sparkles,
+  Sun,
+  Trash2,
+} from "lucide-react";
 import { readJSON, readText, writeJSON, writeText } from "../utils/storage.jsx";
 import { styles } from "./styles";
 
@@ -7,14 +24,39 @@ const TODAY_STORAGE_KEY = "lili_today_top3_v1";
 const TODAY_DATE_KEY = "lili_today_date_v1";
 const QUICK_NOTE_STORAGE_KEY = "lili_quick_note_v1";
 const TASKS_STORAGE_KEY = "lili_tasks_v1";
+const NOTES_STORAGE_KEY = "lili_notes_v1";
 
+// Para usar una imagen personalizada, colócala en /public y escribe aquí su ruta.
+// Ejemplo: const BRAND_IMAGE = "/logo-lili.png";
+const BRAND_IMAGE = null;
+
+// Cada página puede usar un icono de Lucide o una imagen con imageSrc: "/icons/hoy.png".
 const PAGES = [
-  { id: "today", name: "Hoy", icon: "✨" },
-  { id: "tasks", name: "Tareas", icon: "✅" },
-  { id: "notes", name: "Notas", icon: "📝" },
-  { id: "memories", name: "Recuerdos", icon: "📷" },
-  { id: "pinterest", name: "Pinterest", icon: "📌" },
+  { id: "today", name: "Hoy", icon: Sun, color: "#b45309" },
+  { id: "tasks", name: "Tareas", icon: ListTodo, color: "#047857" },
+  { id: "notes", name: "Notas", icon: NotebookPen, color: "#1d4ed8" },
+  { id: "memories", name: "Recuerdos", icon: Camera, color: "#7e22ce" },
+  { id: "pinterest", name: "Pinterest", icon: Pin, color: "#be123c" },
 ];
+
+function AppIcon({ icon: Icon, imageSrc, size = 18, strokeWidth = 1.8 }) {
+  if (imageSrc) {
+    return <img src={imageSrc} alt="" style={{ width: size, height: size, objectFit: "cover" }} />;
+  }
+
+  return <Icon aria-hidden="true" size={size} strokeWidth={strokeWidth} />;
+}
+
+function SectionTitle({ icon, label, color = "#962626" }) {
+  return (
+    <span style={styles.sectionTitle}>
+      <span style={{ color, display: "inline-flex" }}>
+        <AppIcon icon={icon} size={16} />
+      </span>
+      <span>{label}</span>
+    </span>
+  );
+}
 
 function createPriorities() {
   return [
@@ -47,6 +89,32 @@ function isItemList(value) {
 
 function isPriorityList(value) {
   return isItemList(value) && value.length === 3;
+}
+
+function isNoteList(value) {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (note) =>
+        note &&
+        typeof note.id === "string" &&
+        typeof note.title === "string" &&
+        typeof note.content === "string" &&
+        typeof note.pinned === "boolean" &&
+        typeof note.createdAt === "string" &&
+        typeof note.updatedAt === "string",
+    )
+  );
+}
+
+function formatNoteDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Fecha desconocida";
+
+  return new Intl.DateTimeFormat("es-MX", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
 }
 
 function getLocalDateKey(date = new Date()) {
@@ -86,8 +154,12 @@ export default function App() {
       {/* ============== SIDEBAR (navegación) ============== */}
       <aside style={styles.sidebar} className="sidebar">
         {/* Branding / “logo” */}
-        <div style={styles.brand}>
-          <div style={styles.brandIcon}>💗</div>
+        <div style={styles.brand} className="brandPanel">
+          <div style={styles.brandIcon} className="brandIcon">
+            <span style={{ color: "#be123c", display: "inline-flex" }}>
+              <AppIcon icon={Heart} imageSrc={BRAND_IMAGE} size={19} strokeWidth={1.7} />
+            </span>
+          </div>
           <div>
             <div style={styles.brandTitle}>Workspace</div>
             <div style={styles.brandSub}>de lili</div>
@@ -98,19 +170,21 @@ export default function App() {
         <nav style={styles.nav} aria-label="Navegación principal">
           {PAGES.map((p) => {
             const isActive = p.id === active; // ¿este botón es el seleccionado?
+            const iconColor = isActive ? "#ffffff" : p.color;
             return (
               <button
                 type="button"
                 key={p.id} // clave única requerida en listas
                 onClick={() => setActive(p.id)} // cambia pantalla
                 aria-current={isActive ? "page" : undefined}
+                className={`navItem${isActive ? " navItemActive" : ""}`}
                 style={{
                   ...styles.navItem, // estilos base
                   ...(isActive ? styles.navItemActive : {}), // estilos cuando está activo
                 }}
               >
-                <span aria-hidden="true" style={{ width: 22, textAlign: "center" }}>
-                  {p.icon}
+                <span style={{ ...styles.navIcon, color: iconColor }}>
+                  <AppIcon icon={p.icon} imageSrc={p.imageSrc} size={17} />
                 </span>
                 <span>{p.name}</span>
               </button>
@@ -119,7 +193,7 @@ export default function App() {
         </nav>
 
         {/* Footer de sidebar (textito / tip) */}
-        <div style={styles.sidebarFooter}>
+        <div style={styles.sidebarFooter} className="sidebarFooter">
           <div style={styles.tipTitle}>Tip</div>
           <div style={styles.tipText}>y si si?.</div>
         </div>
@@ -128,12 +202,14 @@ export default function App() {
       {/* ============== MAIN (contenido) ============== */}
       <main style={styles.main}>
         {/* Header principal: muestra el nombre de la página activa */}
-        <header style={styles.header}>
-          <div>
-            <h1 style={styles.pageTitle}>{activePage?.name ?? "Página"}</h1>
-            <div style={styles.pageSubtitle}>Organizador</div>
-          </div>
-        </header>
+        {active !== "today" && (
+          <header style={styles.header} className="appHeader">
+            <div>
+              <h1 style={styles.pageTitle}>{activePage?.name ?? "Página"}</h1>
+              <div style={styles.pageSubtitle}>Organizador</div>
+            </div>
+          </header>
+        )}
 
         {/* Render condicional (router casero):
             Solo se monta el componente que coincide con `active`. */}
@@ -159,7 +235,7 @@ export default function App() {
    ============================================================ */
 function Block({ title, children, right }) {
   return (
-    <section style={styles.block}>
+    <section style={styles.block} className="glassBlock">
       <div style={styles.blockTop}>
         <div>
           <h2 style={styles.blockTitle}>{title}</h2>
@@ -263,8 +339,7 @@ function Today() {
 
   return (
     <div style={styles.stack}>
-      {/* Bloque de bienvenida */}
-      <Block title="Hoy ✨">
+      <Block title={<SectionTitle icon={Sun} label="Hoy" color="#b45309" />}>
         <div style={styles.p}>
           Bienvenida. Aquí vas a tener tu día clarito: prioridades, notas y cositas bonitas.
         </div>
@@ -291,6 +366,7 @@ function Today() {
               <div
                 key={it.id}
                 style={styles.dragRow}
+                className="glassRow priorityRow"
                 draggable
                 /* Drag start:
                    guardamos índice origen en dataTransfer */
@@ -319,7 +395,7 @@ function Today() {
               >
                 {/* Handle visual para indicar que se puede arrastrar */}
                 <span aria-hidden="true" style={styles.dragHandle} title="Arrastra para reordenar">
-                  ⋮⋮
+                  <GripVertical size={17} strokeWidth={1.8} />
                 </span>
 
                 {/* Checkbox + input editable */}
@@ -348,20 +424,22 @@ function Today() {
                   <button
                     type="button"
                     style={styles.moveBtn}
+                    className="glassIconButton"
                     onClick={() => moveItem(idx, idx - 1)}
                     disabled={idx === 0}
                     aria-label={`Mover ${it.text || `prioridad ${idx + 1}`} hacia arriba`}
                   >
-                    ↑
+                    <ArrowUp aria-hidden="true" size={14} strokeWidth={1.8} />
                   </button>
                   <button
                     type="button"
                     style={styles.moveBtn}
+                    className="glassIconButton"
                     onClick={() => moveItem(idx, idx + 1)}
                     disabled={idx === items.length - 1}
                     aria-label={`Mover ${it.text || `prioridad ${idx + 1}`} hacia abajo`}
                   >
-                    ↓
+                    <ArrowDown aria-hidden="true" size={14} strokeWidth={1.8} />
                   </button>
                 </div>
               </div>
@@ -381,7 +459,15 @@ function Today() {
 
       {/* Frase del día (estática por ahora) */}
       <Block title="Frase del día">
-        <div style={styles.p}>“Un día a la vez, pero contigo todo se siente más ligero.” 🌷</div>
+        <div style={styles.quote}>
+          <Flower2
+            aria-hidden="true"
+            size={17}
+            strokeWidth={1.7}
+            style={{ color: "#be123c", flexShrink: 0 }}
+          />
+          <span>“Un día a la vez, pero contigo todo se siente más ligero.”</span>
+        </div>
       </Block>
     </div>
   );
@@ -392,7 +478,7 @@ function Today() {
    ------------------------------------------------------------
    Mini nota guardable en localStorage con botón Guardar:
    - text: contenido
-   - saved: flag para mostrar “Guardado ✓” temporal
+   - saveStatus: estado temporal de guardado
    ============================================================ */
 function QuickNote() {
   // Carga inicial desde localStorage (solo una vez)
@@ -435,7 +521,12 @@ function QuickNote() {
         </button>
 
         <span aria-live="polite" style={{ fontSize: 12, color: saveStatus === "error" ? "#b91c1c" : "#15803d" }}>
-          {saveStatus === "saved" && "Guardado ✓"}
+          {saveStatus === "saved" && (
+            <span style={styles.statusWithIcon}>
+              <CircleCheckBig aria-hidden="true" size={14} strokeWidth={1.8} />
+              Guardado
+            </span>
+          )}
           {saveStatus === "error" && "No se pudo guardar"}
         </span>
       </div>
@@ -497,7 +588,7 @@ function Tasks() {
   return (
     <div style={styles.stack}>
       <Block
-        title="Tareas ✅"
+        title={<SectionTitle icon={ListTodo} label="Tareas" color="#047857" />}
         right={
           <button type="button" style={styles.ghostBtn} onClick={clearDone}>
             Limpiar hechas
@@ -521,7 +612,8 @@ function Tasks() {
             style={styles.input}
           />
           <button type="button" style={styles.primaryBtnSmall} onClick={addTask}>
-            + Añadir
+            <Plus aria-hidden="true" size={15} strokeWidth={1.9} />
+            Añadir
           </button>
         </div>
 
@@ -533,10 +625,13 @@ function Tasks() {
         {/* Lista de tareas */}
         <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
           {tasks.length === 0 ? (
-            <div style={styles.p}>Sin tareas por ahora ✨</div>
+            <div style={styles.emptyMessage}>
+              <Sparkles aria-hidden="true" size={17} strokeWidth={1.7} />
+              <span>Sin tareas por ahora</span>
+            </div>
           ) : (
             tasks.map((t) => (
-              <div key={t.id} style={styles.taskRow}>
+              <div key={t.id} style={styles.taskRow} className="glassRow taskRow">
                 <label style={{ display: "flex", alignItems: "center", gap: 10, flex: 1 }}>
                   <input
                     type="checkbox"
@@ -560,10 +655,11 @@ function Tasks() {
                   type="button"
                   onClick={() => deleteTask(t.id)}
                   style={styles.iconBtn}
+                  className="glassIconButton"
                   title="Eliminar"
                   aria-label={`Eliminar ${t.text}`}
                 >
-                  🗑️
+                  <Trash2 aria-hidden="true" size={15} strokeWidth={1.8} />
                 </button>
               </div>
             ))
@@ -584,21 +680,233 @@ function Tasks() {
   );
 }
 
-/* ============================================================
-   SECCION: Notes (placeholder)
-   ------------------------------------------------------------
-   Por ahora solo muestra texto. Después puedes convertirlo
-   en un CRUD de notas como en Notion.
-   ============================================================ */
 function Notes() {
+  const [notes, setNotes] = useState(() => readJSON(NOTES_STORAGE_KEY, [], isNoteList));
+  const [selectedId, setSelectedId] = useState(null);
+  const [query, setQuery] = useState("");
+  const [storageStatus, setStorageStatus] = useState("idle");
+
+  const visibleNotes = useMemo(() => {
+    const normalizedQuery = query.trim().toLocaleLowerCase("es-MX");
+
+    return [...notes]
+      .filter((note) => {
+        if (!normalizedQuery) return true;
+        return `${note.title} ${note.content}`.toLocaleLowerCase("es-MX").includes(normalizedQuery);
+      })
+      .sort((a, b) => {
+        if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+      });
+  }, [notes, query]);
+
+  const selectedNote =
+    visibleNotes.find((note) => note.id === selectedId) ?? visibleNotes[0] ?? null;
+
+  function saveNotes(nextNotes) {
+    setNotes(nextNotes);
+    setStorageStatus(writeJSON(NOTES_STORAGE_KEY, nextNotes) ? "saved" : "error");
+  }
+
+  function createNote() {
+    const now = new Date().toISOString();
+    const note = {
+      id: crypto.randomUUID(),
+      title: "Nueva nota",
+      content: "",
+      pinned: false,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    saveNotes([note, ...notes]);
+    setSelectedId(note.id);
+    setQuery("");
+  }
+
+  function updateSelectedNote(fields) {
+    if (!selectedNote) return;
+
+    const nextNotes = notes.map((note) =>
+      note.id === selectedNote.id
+        ? { ...note, ...fields, updatedAt: new Date().toISOString() }
+        : note,
+    );
+    saveNotes(nextNotes);
+  }
+
+  function deleteSelectedNote() {
+    if (!selectedNote) return;
+
+    const label = selectedNote.title.trim() || "Sin título";
+    if (!window.confirm(`¿Eliminar la nota “${label}”? Esta acción no se puede deshacer.`)) return;
+
+    const nextNotes = notes.filter((note) => note.id !== selectedNote.id);
+    saveNotes(nextNotes);
+    setSelectedId(nextNotes[0]?.id ?? null);
+  }
+
   return (
     <div style={styles.stack}>
-      <Block title="Notas 📝">
-        <div style={styles.p}>Luego sera con guardado automatico.</div>
+      <Block
+        title={<SectionTitle icon={NotebookPen} label="Notas" color="#1d4ed8" />}
+        right={
+          <button type="button" style={styles.primaryBtnSmall} onClick={createNote}>
+            <Plus aria-hidden="true" size={15} strokeWidth={1.9} />
+            Nueva nota
+          </button>
+        }
+      >
+        <div style={styles.p}>
+          Guarda ideas, pendientes y cosas importantes. Los cambios se guardan automáticamente.
+        </div>
       </Block>
-      <Block title="Ejemplo">
-        <div style={styles.p}>Idea: “cosas que no debo olvidar esta semana…”</div>
-      </Block>
+
+      <div style={styles.notesLayout} className="notesLayout">
+        <Block title={`Tus notas (${notes.length})`}>
+          <label htmlFor="note-search" className="srOnly">
+            Buscar notas
+          </label>
+          <input
+            id="note-search"
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Buscar notas..."
+            style={styles.input}
+          />
+
+          <div style={styles.noteList} aria-label="Lista de notas">
+            {visibleNotes.length === 0 ? (
+              <div style={styles.emptyState}>
+                <div aria-hidden="true" style={styles.emptyIcon}>
+                  {notes.length === 0 ? (
+                    <NotebookPen size={24} strokeWidth={1.6} />
+                  ) : (
+                    <Search size={24} strokeWidth={1.6} />
+                  )}
+                </div>
+                <div style={{ fontWeight: 650 }}>
+                  {notes.length === 0 ? "Aún no hay notas" : "No encontramos resultados"}
+                </div>
+                <div style={styles.p}>
+                  {notes.length === 0
+                    ? "Crea la primera para comenzar."
+                    : "Prueba con otra palabra."}
+                </div>
+              </div>
+            ) : (
+              visibleNotes.map((note) => {
+                const isSelected = note.id === selectedNote?.id;
+                return (
+                  <button
+                    type="button"
+                    key={note.id}
+                    onClick={() => setSelectedId(note.id)}
+                    aria-pressed={isSelected}
+                    className={`noteCard${isSelected ? " noteCardActive" : ""}`}
+                    style={{
+                      ...styles.noteCard,
+                      ...(isSelected ? styles.noteCardActive : {}),
+                    }}
+                  >
+                    <span style={styles.noteCardTop}>
+                      <span style={styles.noteCardTitle}>{note.title.trim() || "Sin título"}</span>
+                      {note.pinned && (
+                        <span
+                          aria-label="Nota fijada"
+                          title="Nota fijada"
+                          style={{ color: "#be123c", display: "inline-flex" }}
+                        >
+                          <Pin size={14} strokeWidth={1.8} fill="currentColor" />
+                        </span>
+                      )}
+                    </span>
+                    <span style={styles.notePreview}>
+                      {note.content.trim() || "Nota vacía"}
+                    </span>
+                    <span style={styles.noteDate}>{formatNoteDate(note.updatedAt)}</span>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </Block>
+
+        <Block title="Editor">
+          {selectedNote ? (
+            <div style={styles.noteEditor}>
+              <label htmlFor="note-title" style={styles.fieldLabel}>
+                Título
+              </label>
+              <input
+                id="note-title"
+                value={selectedNote.title}
+                onChange={(event) => updateSelectedNote({ title: event.target.value })}
+                placeholder="Título de la nota"
+                style={styles.input}
+              />
+
+              <label htmlFor="note-content" style={styles.fieldLabel}>
+                Contenido
+              </label>
+              <textarea
+                id="note-content"
+                value={selectedNote.content}
+                onChange={(event) => updateSelectedNote({ content: event.target.value })}
+                placeholder="Escribe tu nota..."
+                rows={14}
+                style={styles.noteTextarea}
+              />
+
+              <div style={styles.noteActions} className="noteActions">
+                <button
+                  type="button"
+                  style={styles.ghostBtn}
+                  onClick={() => updateSelectedNote({ pinned: !selectedNote.pinned })}
+                  aria-pressed={selectedNote.pinned}
+                >
+                  <Pin
+                    aria-hidden="true"
+                    size={14}
+                    strokeWidth={1.8}
+                    fill={selectedNote.pinned ? "currentColor" : "none"}
+                  />
+                  {selectedNote.pinned ? "Desfijar" : "Fijar"}
+                </button>
+                <button type="button" style={styles.dangerBtn} onClick={deleteSelectedNote}>
+                  Eliminar
+                </button>
+              </div>
+
+              <div style={styles.noteMeta}>
+                <span>Modificada: {formatNoteDate(selectedNote.updatedAt)}</span>
+                <span
+                  aria-live="polite"
+                  style={{ color: storageStatus === "error" ? "#b91c1c" : "#15803d" }}
+                >
+                  {storageStatus === "saved" && (
+                    <span style={styles.statusWithIcon}>
+                      <CircleCheckBig aria-hidden="true" size={13} strokeWidth={1.8} />
+                      Guardado automático
+                    </span>
+                  )}
+                  {storageStatus === "error" && "No se pudo guardar en este navegador"}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div style={styles.emptyState}>
+              <div style={{ fontWeight: 650 }}>Selecciona o crea una nota</div>
+              <div style={styles.p}>El editor aparecerá aquí.</div>
+              <button type="button" style={styles.primaryBtnSmall} onClick={createNote}>
+                <Plus aria-hidden="true" size={15} strokeWidth={1.9} />
+                Crear mi primera nota
+              </button>
+            </div>
+          )}
+        </Block>
+      </div>
     </div>
   );
 }
@@ -612,7 +920,7 @@ function Notes() {
 function Memories() {
   return (
     <div style={styles.stack}>
-      <Block title="Recuerdos 📷">
+      <Block title={<SectionTitle icon={Camera} label="Recuerdos" color="#7e22ce" />}>
         <div style={styles.p}>Después metere para subir fotos y escribirte una mini-carta.</div>
       </Block>
     </div>
@@ -633,7 +941,7 @@ function Pinterest() {
   // Lista de boards (puedes meter más)
   const boards = [
     {
-      name: "my way 🎤💵💚🧑‍🧑‍🧒‍🧒🫂📈🖥️",
+      name: "My way",
       url: "https://mx.pinterest.com/cosmologyp/my-way/",
     },
   ];
@@ -698,7 +1006,10 @@ function Pinterest() {
 
   return (
     <div style={styles.stack}>
-      <Block title="Pinterest 📌" right={<span style={{ fontSize: 12, color: "#6b7280" }}>Boards</span>}>
+      <Block
+        title={<SectionTitle icon={Pin} label="Pinterest" color="#be123c" />}
+        right={<span style={{ fontSize: 12, color: "#6b7280" }}>Boards</span>}
+      >
         <div style={styles.p}>Selecciona uno y aqui se te mostrará el contenido jiji.</div>
 
         {/* Tabs (botones) */}
@@ -711,6 +1022,7 @@ function Pinterest() {
                 key={b.url}
                 onClick={() => setActiveBoard(b.url)}
                 aria-pressed={isActive}
+                className={`boardTab${isActive ? " boardTabActive" : ""}`}
                 style={{ ...styles.tabBtn, ...(isActive ? styles.tabBtnActive : {}) }}
               >
                 {b.name}
