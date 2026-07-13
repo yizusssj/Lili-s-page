@@ -14,3 +14,22 @@ export function getLocalDateKey(date = new Date()) {
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
+
+export function formatCalendarDate(value) {
+  const parts = typeof value === "string" ? value.split("-").map(Number) : [];
+  if (parts.length !== 3 || parts.some((part) => !Number.isInteger(part))) {
+    return "Fecha desconocida";
+  }
+
+  const [year, month, day] = parts;
+  const date = new Date(year, month - 1, day);
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return "Fecha desconocida";
+  }
+
+  return new Intl.DateTimeFormat("es-MX", { dateStyle: "long" }).format(date);
+}

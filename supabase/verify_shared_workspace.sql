@@ -1,6 +1,6 @@
 -- Ejecuta cada bloque para verificar la migración compartida.
 
--- Resultado esperado: 6 tablas y rowsecurity = true en todas.
+-- Resultado esperado: 8 tablas y rowsecurity = true en todas.
 select tablename, rowsecurity
 from pg_tables
 where schemaname = 'public'
@@ -9,12 +9,14 @@ where schemaname = 'public'
     'workspace_members',
     'tasks',
     'notes',
+    'memory_albums',
+    'memories',
     'today_priorities',
     'quick_notes'
   )
 order by tablename;
 
--- Resultado esperado: 24 políticas, todas para authenticated.
+-- Resultado esperado: 32 políticas públicas, todas para authenticated.
 select tablename, policyname, cmd, roles
 from pg_policies
 where schemaname = 'public'
@@ -23,6 +25,8 @@ where schemaname = 'public'
     'workspace_members',
     'tasks',
     'notes',
+    'memory_albums',
+    'memories',
     'today_priorities',
     'quick_notes'
   )
@@ -47,12 +51,14 @@ where table_schema = 'public'
   and table_name = 'workspaces'
   and column_name = 'data_initialized_at';
 
--- Resultado esperado: 2 funciones con security_type = INVOKER.
+-- Resultado esperado: 4 funciones con security_type = INVOKER.
 select routine_name, security_type
 from information_schema.routines
 where routine_schema = 'public'
   and routine_name in (
     'initialize_workspace_data',
+    'ensure_memory_album_workspace',
+    'memory_workspace_from_path',
     'save_workspace_priorities'
   )
 order by routine_name;
@@ -61,3 +67,20 @@ order by routine_name;
 select id, name, data_initialized_at
 from public.workspaces
 order by created_at;
+
+-- Después de 20260713004000_memories_gallery.sql: bucket privado y límite de 8 MB.
+select id, name, public, file_size_limit, allowed_mime_types
+from storage.buckets
+where id = 'memory-images';
+
+-- Resultado esperado: 3 políticas para authenticated.
+select policyname, cmd, roles
+from pg_policies
+where schemaname = 'storage'
+  and tablename = 'objects'
+  and policyname in (
+    'Members read workspace memory images',
+    'Members upload workspace memory images',
+    'Members delete workspace memory images'
+  )
+order by cmd, policyname;

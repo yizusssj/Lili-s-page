@@ -232,6 +232,497 @@ input[type="checkbox"] {
   animation: auth-spin 850ms linear infinite;
 }
 
+.memoryHeaderActions {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.memoryOptional {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.albumForm {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.72fr) minmax(0, 1.28fr);
+  gap: 18px;
+}
+
+.albumFormIntro {
+  min-height: 285px;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 30% 24%, rgba(159, 228, 245, 0.66), transparent 42%),
+    radial-gradient(circle at 75% 76%, rgba(217, 190, 255, 0.56), transparent 46%),
+    rgba(255, 255, 255, 0.46);
+  color: var(--accent-dark);
+  text-align: center;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+.albumFormIntro strong {
+  margin-top: 8px;
+  color: var(--text-primary);
+  font-size: 15px;
+}
+
+.albumFormIntro span {
+  max-width: 250px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.albumEmptyState {
+  min-height: 330px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.albumIdeas {
+  margin: 10px 0 6px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.albumIdeas button {
+  padding: 10px 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
+  box-shadow: 0 8px 22px rgba(62, 42, 75, 0.08);
+}
+
+.albumIdeas button:hover {
+  color: var(--accent-dark);
+  background: rgba(233, 250, 255, 0.72);
+}
+
+.albumGallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(235px, 1fr));
+  gap: 16px;
+}
+
+.albumCard {
+  min-width: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 21px;
+  background: rgba(255, 255, 255, 0.46);
+  color: var(--text-primary);
+  box-shadow:
+    0 10px 27px rgba(63, 43, 75, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  text-align: left;
+}
+
+.albumCard:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 18px 40px rgba(63, 43, 75, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+.albumCardCover {
+  width: 100%;
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  place-items: center;
+  background:
+    radial-gradient(circle at 25% 20%, rgba(159, 228, 245, 0.72), transparent 46%),
+    radial-gradient(circle at 78% 72%, rgba(216, 184, 255, 0.65), transparent 48%),
+    rgba(246, 242, 250, 0.82);
+  color: var(--accent-dark);
+}
+
+.albumCardCover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 280ms ease;
+}
+
+.albumCard:hover .albumCardCover img {
+  transform: scale(1.025);
+}
+
+.albumCardPlaceholder {
+  width: 66px;
+  height: 66px;
+  display: grid;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 21px;
+  background: rgba(255, 255, 255, 0.43);
+  place-items: center;
+  box-shadow: 0 10px 26px rgba(74, 56, 91, 0.1);
+}
+
+.albumCardCount {
+  padding: 6px 9px;
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.68);
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 700;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.albumCardBody {
+  min-width: 0;
+  padding: 14px 15px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.albumCardBody strong {
+  overflow: hidden;
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.albumCardBody > span {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.memoryForm {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.85fr) minmax(0, 1.15fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.memoryDropzone {
+  min-height: 360px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px dashed rgba(40, 127, 149, 0.42);
+  border-radius: 20px;
+  background: rgba(230, 250, 255, 0.42);
+  color: var(--text-secondary);
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.memoryDropzone:hover {
+  border-color: rgba(40, 127, 149, 0.68);
+  background: rgba(230, 250, 255, 0.62);
+}
+
+.memoryDropzone:focus-within {
+  outline: 3px solid rgba(40, 127, 149, 0.52);
+  outline-offset: 3px;
+}
+
+.memoryDropzone > img {
+  width: 100%;
+  height: 100%;
+  min-height: 360px;
+  position: absolute;
+  inset: 0;
+  object-fit: cover;
+}
+
+.memoryDropzoneEmpty {
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.memoryDropzoneEmpty small {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.memoryDropzoneIcon {
+  width: 52px;
+  height: 52px;
+  margin-bottom: 3px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--glass-highlight);
+  border-radius: 17px;
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--accent-dark);
+  box-shadow: var(--shadow-soft);
+}
+
+.memoryFileName {
+  max-width: calc(100% - 24px);
+  padding: 7px 10px;
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.52);
+  border-radius: 10px;
+  background: rgba(27, 31, 39, 0.62);
+  color: #ffffff;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memoryFields {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.memoryFields textarea {
+  min-height: 132px;
+}
+
+.memoryFormError {
+  padding: 9px 11px;
+  border: 1px solid rgba(185, 28, 28, 0.18);
+  border-radius: 12px;
+  background: rgba(255, 241, 242, 0.72);
+  color: #991b1b;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.memoryFormActions {
+  margin-top: auto;
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+}
+
+.memoryGallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 14px;
+}
+
+.memoryCard {
+  min-width: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--control-border);
+  border-radius: 19px;
+  background: var(--glass-control);
+  color: var(--text-primary);
+  box-shadow:
+    0 12px 30px rgba(63, 43, 75, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.66);
+  cursor: pointer;
+  text-align: left;
+}
+
+.memoryCard:hover {
+  box-shadow:
+    0 17px 38px rgba(63, 43, 75, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.76);
+}
+
+.memoryCardImage {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 25% 20%, rgba(255, 255, 255, 0.86), transparent 26%),
+    linear-gradient(145deg, rgba(159, 228, 245, 0.5), rgba(201, 176, 238, 0.48));
+  color: var(--accent-dark);
+}
+
+.memoryCardImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 260ms ease;
+}
+
+.memoryCard:hover .memoryCardImage img {
+  transform: scale(1.025);
+}
+
+.memoryCardBody {
+  min-width: 0;
+  padding: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.memoryCardDate {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--accent-dark);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.memoryCardBody > strong {
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memoryCardBody > span:last-child:not(.memoryCardDate) {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.memoryModalBackdrop {
+  padding:
+    max(18px, env(safe-area-inset-top))
+    max(18px, env(safe-area-inset-right))
+    max(18px, env(safe-area-inset-bottom))
+    max(18px, env(safe-area-inset-left));
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  background: rgba(31, 26, 38, 0.58);
+  backdrop-filter: blur(18px) saturate(120%);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+}
+
+.memoryModal {
+  width: min(980px, 100%);
+  max-height: min(760px, calc(100vh - 36px));
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.64);
+  border-radius: 26px;
+  background: rgba(250, 248, 252, 0.92);
+  box-shadow: 0 32px 90px rgba(22, 18, 28, 0.34);
+}
+
+.memoryModalClose {
+  width: 38px;
+  height: 38px;
+  position: absolute;
+  top: 13px;
+  right: 13px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  border-radius: 13px;
+  background: rgba(25, 22, 30, 0.62);
+  color: #ffffff;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.memoryModalImage {
+  min-height: 520px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 22% 18%, rgba(255, 255, 255, 0.72), transparent 28%),
+    linear-gradient(145deg, rgba(159, 228, 245, 0.44), rgba(201, 176, 238, 0.5));
+  color: var(--accent-dark);
+}
+
+.memoryModalImage img {
+  width: 100%;
+  height: 100%;
+  max-height: min(760px, calc(100vh - 36px));
+  object-fit: contain;
+}
+
+.memoryModalContent {
+  padding: 34px 28px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  overflow-y: auto;
+}
+
+.memoryModalContent h2 {
+  margin: 12px 0 9px;
+  font-size: clamp(22px, 3vw, 31px);
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+}
+
+.memoryModalContent p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.memoryModalEmptyText {
+  color: var(--text-muted) !important;
+  font-style: italic;
+}
+
+.memoryDeleteButton {
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
 @media (pointer: fine) {
   html,
   body,
@@ -655,7 +1146,12 @@ a[data-pin-do] {
   .glassRow,
   .noteCard,
   .glassIconButton,
-  .boardTab {
+  .boardTab,
+  .memoryDropzone,
+  .memoryFileName,
+  .albumCardCount,
+  .memoryModalBackdrop,
+  .memoryModalClose {
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
   }
@@ -747,6 +1243,43 @@ a[data-pin-do] {
   .notesLayout {
     grid-template-columns: 1fr !important;
   }
+
+  .memoryForm {
+    grid-template-columns: 1fr;
+  }
+
+  .albumForm {
+    grid-template-columns: 1fr;
+  }
+
+  .albumFormIntro {
+    min-height: 220px;
+  }
+
+  .memoryDropzone,
+  .memoryDropzone > img {
+    min-height: 300px;
+  }
+
+  .memoryModal {
+    max-height: calc(100vh - 24px);
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+
+  .memoryModalImage {
+    min-height: 0;
+    aspect-ratio: 4 / 3;
+  }
+
+  .memoryModalImage img {
+    max-height: 58vh;
+  }
+
+  .memoryModalContent {
+    min-height: 240px;
+    overflow: visible;
+  }
 }
 
 @media (max-width: 520px) {
@@ -790,5 +1323,57 @@ a[data-pin-do] {
   .taskComposer button,
   .noteActions button {
     width: 100%;
+  }
+
+  .memoryGallery {
+    grid-template-columns: 1fr;
+  }
+
+  .albumGallery {
+    grid-template-columns: 1fr;
+  }
+
+  .memoryHeaderActions {
+    gap: 6px;
+  }
+
+  .memoryHeaderActions button {
+    flex: 1;
+  }
+
+  .albumIdeas {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .memoryDropzone,
+  .memoryDropzone > img {
+    min-height: 250px;
+  }
+
+  .memoryFormActions {
+    flex-direction: column-reverse;
+  }
+
+  .memoryFormActions button {
+    width: 100%;
+  }
+
+  .memoryModalBackdrop {
+    padding: 8px;
+  }
+
+  .memoryModal {
+    max-height: calc(100vh - 16px);
+    border-radius: 20px;
+  }
+
+  .memoryModalContent {
+    padding: 24px 19px 20px;
+  }
+
+  .memoryDeleteButton {
+    width: 100%;
+    margin-top: 22px;
   }
 }

@@ -10,8 +10,10 @@ const DEFAULT_PRIORITIES = [
 ];
 
 function WorkspaceHarness({ children, initialData }) {
+  const [albums, setAlbums] = useState(initialData.albums ?? []);
   const [tasks, setTasks] = useState(initialData.tasks ?? []);
   const [notes, setNotes] = useState(initialData.notes ?? []);
+  const [memories, setMemories] = useState(initialData.memories ?? []);
   const [priorities, setPriorities] = useState(
     initialData.priorities ?? DEFAULT_PRIORITIES,
   );
@@ -75,6 +77,38 @@ function WorkspaceHarness({ children, initialData }) {
   }
 
   const value = {
+    addAlbum: async ({ description, title }) => {
+      const now = new Date().toISOString();
+      const album = {
+        id: crypto.randomUUID(),
+        title,
+        description,
+        createdAt: now,
+        updatedAt: now,
+      };
+      setAlbums((current) => [album, ...current]);
+      return { data: album, error: null };
+    },
+    addMemory: async ({ albumId, description, file, memoryDate, title }) => {
+      const now = new Date().toISOString();
+      const memory = {
+        id: crypto.randomUUID(),
+        albumId,
+        title,
+        description,
+        memoryDate,
+        storagePath: `workspace-test/${crypto.randomUUID()}.jpg`,
+        mimeType: "image/jpeg",
+        fileSize: file.size,
+        createdAt: now,
+        updatedAt: now,
+        imageUrl: "https://example.test/memory.jpg",
+        imageUrlExpiresAt: Date.now() + 3600000,
+      };
+      setMemories((current) => [memory, ...current]);
+      return { data: memory, error: null };
+    },
+    albums,
     addTask,
     clearCompletedTasks: async () => {
       setTasks((current) => current.filter((task) => !task.done));
@@ -84,6 +118,7 @@ function WorkspaceHarness({ children, initialData }) {
     createNote,
     initializationError: null,
     loading: false,
+    memories,
     movePriority: (from, to) => {
       changePriorities((current) => {
         const copy = [...current];
@@ -98,6 +133,10 @@ function WorkspaceHarness({ children, initialData }) {
     refresh: async () => true,
     removeNote: async (noteId) => {
       setNotes((current) => current.filter((note) => note.id !== noteId));
+      return true;
+    },
+    removeMemory: async (memoryId) => {
+      setMemories((current) => current.filter((memory) => memory.id !== memoryId));
       return true;
     },
     removeTask,

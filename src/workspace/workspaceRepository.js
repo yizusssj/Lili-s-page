@@ -35,6 +35,72 @@ function mapPriority(row, localDate) {
   };
 }
 
+function mapAlbum(row) {
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+const MEMORY_BUCKET = "memory-images";
+const MEMORY_URL_SECONDS = 6 * 60 * 60;
+
+function mapMemory(row, image = {}) {
+  return {
+    id: row.id,
+    albumId: row.album_id,
+    title: row.title,
+    description: row.description,
+    memoryDate: row.memory_date,
+    storagePath: row.storage_path,
+    mimeType: row.mime_type,
+    fileSize: row.file_size,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    imageUrl: image.signedUrl ?? null,
+    imageUrlExpiresAt: image.expiresAt ?? 0,
+  };
+}
+
+async function attachMemoryUrls(client, rows, existingMemories) {
+  const now = Date.now();
+  const reusable = new Map(
+    existingMemories
+      .filter(
+        (memory) =>
+          memory.imageUrl && memory.imageUrlExpiresAt > now + 5 * 60 * 1000,
+      )
+      .map((memory) => [
+        memory.storagePath,
+        { expiresAt: memory.imageUrlExpiresAt, signedUrl: memory.imageUrl },
+      ]),
+  );
+  const pathsToSign = rows
+    .map((row) => row.storage_path)
+    .filter((path) => !reusable.has(path));
+
+  if (pathsToSign.length > 0) {
+    const { data, error } = await client.storage
+      .from(MEMORY_BUCKET)
+      .createSignedUrls(pathsToSign, MEMORY_URL_SECONDS);
+
+    throwIfError(error, "No se pudieron abrir las fotografías privadas.");
+
+    (data ?? []).forEach((item, index) => {
+      if (!item.signedUrl) return;
+      reusable.set(item.path ?? pathsToSign[index], {
+        expiresAt: now + MEMORY_URL_SECONDS * 1000,
+        signedUrl: item.signedUrl,
+      });
+    });
+  }
+
+  return rows.map((row) => mapMemory(row, reusable.get(row.storage_path)));
+}
+
 export async function findUserWorkspace(client, userId) {
   const { data: membership, error: membershipError } = await client
     .from("workspace_members")
@@ -82,8 +148,20 @@ export async function initializeWorkspace(client, workspaceId, seed) {
   return data;
 }
 
-export async function fetchWorkspaceData(client, workspaceId, localDate) {
-  const [tasksResult, notesResult, prioritiesResult, quickNoteResult] = await Promise.all([
+export async function fetchWorkspaceData(
+  client,
+  workspaceId,
+  localDate,
+  existingMemories = [],
+) {
+  const [
+    tasksResult,
+    notesResult,
+    prioritiesResult,
+    quickNoteResult,
+    albumsResult,
+    memoriesResult,
+  ] = await Promise.all([
     client
       .from("tasks")
       .select("id, text, done, created_at, updated_at")
@@ -104,19 +182,127 @@ export async function fetchWorkspaceData(client, workspaceId, localDate) {
       .select("content")
       .eq("workspace_id", workspaceId)
       .maybeSingle(),
+    client
+      .from("memory_albums")
+      .select("id, title, description, created_at, updated_at")
+      .eq("workspace_id", workspaceId)
+      .order("created_at", { ascending: false }),
+    client
+      .from("memories")
+      .select(
+        "id, album_id, title, description, memory_date, storage_path, mime_type, file_size, created_at, updated_at",
+      )
+      .eq("workspace_id", workspaceId)
+      .order("memory_date", { ascending: false })
+      .order("created_at", { ascending: false }),
   ]);
 
   throwIfError(tasksResult.error, "No se pudieron cargar las tareas.");
   throwIfError(notesResult.error, "No se pudieron cargar las notas.");
   throwIfError(prioritiesResult.error, "No se pudieron cargar las prioridades.");
   throwIfError(quickNoteResult.error, "No se pudo cargar la nota rápida.");
+  throwIfError(memoriesResult.error, "No se pudieron cargar los recuerdos.");
+  throwIfError(albumsResult.error, "No se pudieron cargar los álbumes.");
+
+  const memories = await attachMemoryUrls(
+    client,
+    memoriesResult.data ?? [],
+    existingMemories,
+  );
 
   return {
+    albums: (albumsResult.data ?? []).map(mapAlbum),
+    memories,
     notes: (notesResult.data ?? []).map(mapNote),
     priorities: (prioritiesResult.data ?? []).map((row) => mapPriority(row, localDate)),
     quickNote: quickNoteResult.data?.content ?? "",
     tasks: (tasksResult.data ?? []).map(mapTask),
   };
+}
+
+export async function insertAlbum(client, workspaceId, userId, album) {
+  const { data, error } = await client
+    .from("memory_albums")
+    .insert({
+      created_by: userId,
+      description: album.description,
+      id: album.id,
+      title: album.title,
+      workspace_id: workspaceId,
+    })
+    .select("id, title, description, created_at, updated_at")
+    .single();
+
+  throwIfError(error, "No se pudo crear el álbum.");
+  return mapAlbum(data);
+}
+
+export async function insertMemory(
+  client,
+  workspaceId,
+  userId,
+  memory,
+  image,
+) {
+  const uploadResult = await client.storage
+    .from(MEMORY_BUCKET)
+    .upload(memory.storagePath, image.blob, {
+      cacheControl: String(MEMORY_URL_SECONDS),
+      contentType: image.mimeType,
+      upsert: false,
+    });
+
+  throwIfError(uploadResult.error, "No se pudo subir la fotografía.");
+
+  let row;
+  try {
+    const { data, error } = await client
+      .from("memories")
+      .insert({
+        album_id: memory.albumId,
+        created_by: userId,
+        description: memory.description,
+        file_size: image.blob.size,
+        id: memory.id,
+        memory_date: memory.memoryDate,
+        mime_type: image.mimeType,
+        storage_path: memory.storagePath,
+        title: memory.title,
+        workspace_id: workspaceId,
+      })
+      .select(
+        "id, album_id, title, description, memory_date, storage_path, mime_type, file_size, created_at, updated_at",
+      )
+      .single();
+
+    throwIfError(error, "No se pudo guardar el recuerdo.");
+    row = data;
+  } catch (error) {
+    await client.storage.from(MEMORY_BUCKET).remove([memory.storagePath]);
+    throw error;
+  }
+
+  const { data: signedData } = await client.storage
+    .from(MEMORY_BUCKET)
+    .createSignedUrl(memory.storagePath, MEMORY_URL_SECONDS);
+
+  return mapMemory(row, {
+    expiresAt: signedData?.signedUrl ? Date.now() + MEMORY_URL_SECONDS * 1000 : 0,
+    signedUrl: signedData?.signedUrl,
+  });
+}
+
+export async function deleteMemory(client, workspaceId, memoryId, storagePath) {
+  const storageResult = await client.storage.from(MEMORY_BUCKET).remove([storagePath]);
+  throwIfError(storageResult.error, "No se pudo eliminar la fotografía privada.");
+
+  const { error } = await client
+    .from("memories")
+    .delete()
+    .eq("workspace_id", workspaceId)
+    .eq("id", memoryId);
+
+  throwIfError(error, "No se pudo eliminar el recuerdo.");
 }
 
 export async function insertTask(client, workspaceId, userId, task) {

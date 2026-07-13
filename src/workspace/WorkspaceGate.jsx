@@ -7,6 +7,20 @@ function getWorkspaceErrorMessage(error) {
   }
 
   if (
+    error?.message?.includes("memory_albums") ||
+    error?.message?.includes("album_id")
+  ) {
+    return "Falta ejecutar la migración memory_albums.sql en Supabase.";
+  }
+
+  if (
+    ["42P01", "PGRST205"].includes(error?.code) ||
+    error?.message?.includes("memories")
+  ) {
+    return "Falta ejecutar la migración memories_gallery.sql en Supabase.";
+  }
+
+  if (
     ["42703", "42883", "PGRST202", "PGRST204"].includes(error?.code) ||
     error?.message?.includes("initialize_workspace_data") ||
     error?.message?.includes("data_initialized_at")

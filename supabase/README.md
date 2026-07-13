@@ -48,3 +48,20 @@ Esta migración:
 En el primer inicio posterior a la migración, la cuenta `owner` inicializa el workspace. Si ya existía contenido remoto, se conserva. Desde ese momento Supabase es la fuente principal y `localStorage` queda únicamente como copia local del último estado cargado.
 
 Vuelve a ejecutar `verify_shared_workspace.sql` para comprobar que la columna y las dos funciones nuevas existen. Después del primer inicio, `data_initialized_at` debe contener una fecha.
+
+## Activar la galería privada de recuerdos
+
+Ejecuta una sola vez `migrations/20260713004000_memories_gallery.sql` después de las migraciones anteriores.
+
+Esta migración crea:
+
+- la tabla `memories`, vinculada al workspace compartido;
+- el bucket privado `memory-images`, limitado a 8 MB por archivo;
+- políticas RLS para que únicamente los miembros del workspace puedan listar, subir o eliminar sus imágenes;
+- enlaces temporales firmados, generados por la aplicación al mostrar la galería.
+
+La aplicación acepta JPG, PNG, WebP y HEIC de hasta 20 MB. Antes de subir cada fotografía, el navegador corrige su orientación, reduce su lado mayor a 2400 píxeles y la convierte a JPEG de hasta 8 MB.
+
+Después ejecuta `migrations/20260713010000_memory_albums.sql`. Esta segunda migración permite crear álbumes libres —por ejemplo, personas, viajes, celebraciones o momentos personales— y relaciona cada fotografía con uno de ellos. Si ya existían recuerdos, los conserva dentro de un álbum llamado `Momentos`.
+
+Finalmente vuelve a correr `verify_shared_workspace.sql`. Deben aparecer ocho tablas públicas con RLS, treinta y dos políticas públicas, el bucket privado y tres políticas sobre `storage.objects`.

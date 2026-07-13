@@ -3,15 +3,19 @@ import { STORAGE_KEYS } from "../app/config.js";
 import { useAuth } from "../auth/authContext.js";
 import { supabase } from "../lib/supabase.js";
 import { getLocalDateKey } from "../utils/date.js";
+import { prepareMemoryImage } from "../utils/images.js";
 import { writeJSON, writeText } from "../utils/storage.js";
 import { WorkspaceContext } from "./workspaceContext.js";
 import {
   deleteCompletedTasks as deleteCompletedTasksRemote,
+  deleteMemory as deleteMemoryRemote,
   deleteNote as deleteNoteRemote,
   deleteTask as deleteTaskRemote,
   fetchWorkspaceData,
   findUserWorkspace,
   initializeWorkspace,
+  insertAlbum,
+  insertMemory,
   insertNote,
   insertTask,
   savePriorities as savePrioritiesRemote,
@@ -50,8 +54,10 @@ export default function WorkspaceProvider({ children }) {
   const { user } = useAuth();
   const userId = user?.id;
   const [workspace, setWorkspace] = useState(null);
+  const [albums, setAlbums] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [notes, setNotes] = useState([]);
+  const [memories, setMemories] = useState([]);
   const [priorities, setPriorities] = useState([]);
   const [quickNote, setQuickNote] = useState("");
   const [loading, setLoading] = useState(true);
@@ -61,8 +67,10 @@ export default function WorkspaceProvider({ children }) {
   const [bufferedWrites, setBufferedWrites] = useState(0);
 
   const workspaceRef = useRef(null);
+  const albumsRef = useRef([]);
   const tasksRef = useRef([]);
   const notesRef = useRef([]);
+  const memoriesRef = useRef([]);
   const prioritiesRef = useRef([]);
   const pendingWritesRef = useRef(0);
   const noteBuffersRef = useRef(new Map());
@@ -82,10 +90,20 @@ export default function WorkspaceProvider({ children }) {
     writeJSON(STORAGE_KEYS.tasks, nextTasks);
   }, []);
 
+  const commitAlbums = useCallback((nextAlbums) => {
+    albumsRef.current = nextAlbums;
+    setAlbums(nextAlbums);
+  }, []);
+
   const commitNotes = useCallback((nextNotes) => {
     notesRef.current = nextNotes;
     setNotes(nextNotes);
     writeJSON(STORAGE_KEYS.notes, nextNotes);
+  }, []);
+
+  const commitMemories = useCallback((nextMemories) => {
+    memoriesRef.current = nextMemories;
+    setMemories(nextMemories);
   }, []);
 
   const commitPriorities = useCallback((nextPriorities) => {
@@ -102,12 +120,21 @@ export default function WorkspaceProvider({ children }) {
 
   const commitWorkspaceData = useCallback(
     (data) => {
+      commitAlbums(data.albums);
       commitTasks(data.tasks);
       commitNotes(data.notes);
+      commitMemories(data.memories);
       commitPriorities(data.priorities);
       commitQuickNote(data.quickNote);
     },
-    [commitNotes, commitPriorities, commitQuickNote, commitTasks],
+    [
+      commitAlbums,
+      commitMemories,
+      commitNotes,
+      commitPriorities,
+      commitQuickNote,
+      commitTasks,
+    ],
   );
 
   const performWrite = useCallback(async (operation, message) => {
@@ -148,6 +175,7 @@ export default function WorkspaceProvider({ children }) {
         supabase,
         nextWorkspace.id,
         getLocalDateKey(),
+        memoriesRef.current,
       );
 
       if (data.priorities.length !== 3) {
@@ -176,6 +204,7 @@ export default function WorkspaceProvider({ children }) {
         supabase,
         currentWorkspace.id,
         getLocalDateKey(),
+        memoriesRef.current,
       );
       commitWorkspaceData(data);
       setSyncError(null);
@@ -355,6 +384,107 @@ export default function WorkspaceProvider({ children }) {
     commitNotes([result.data, ...notesRef.current]);
     return result.data;
   }, [commitNotes, performWrite, userId]);
+
+  const addAlbum = useCallback(
+    async ({ description, title }) => {
+      const currentWorkspace = workspaceRef.current;
+      const normalizedTitle = title.trim().slice(0, 80);
+      if (!currentWorkspace || !userId || !normalizedTitle) {
+        return { data: null, error: new Error("Escribe un nombre para el álbum.") };
+      }
+
+      const album = {
+        description: description.trim().slice(0, 500),
+        id: crypto.randomUUID(),
+        title: normalizedTitle,
+      };
+      const result = await performWrite(
+        () => insertAlbum(supabase, currentWorkspace.id, userId, album),
+        "No se pudo crear el álbum.",
+      );
+
+      if (result.error) return result;
+      commitAlbums([result.data, ...albumsRef.current]);
+      return result;
+    },
+    [commitAlbums, performWrite, userId],
+  );
+
+  const addMemory = useCallback(
+    async ({ albumId, description, file, memoryDate, title }) => {
+      const currentWorkspace = workspaceRef.current;
+      const normalizedTitle = title.trim().slice(0, 120);
+      const validMemoryDate = /^\d{4}-\d{2}-\d{2}$/.test(memoryDate)
+        && memoryDate <= getLocalDateKey();
+      if (
+        !currentWorkspace ||
+        !userId ||
+        !albumsRef.current.some((album) => album.id === albumId) ||
+        !normalizedTitle ||
+        !file ||
+        !validMemoryDate
+      ) {
+        return { data: null, error: new Error("Completa los datos del recuerdo.") };
+      }
+
+      const id = crypto.randomUUID();
+      const memory = {
+        albumId,
+        description: description.trim().slice(0, 4000),
+        id,
+        memoryDate,
+        storagePath: `${currentWorkspace.id}/${id}.jpg`,
+        title: normalizedTitle,
+      };
+
+      const result = await performWrite(
+        async () => {
+          const image = await prepareMemoryImage(file);
+          return insertMemory(
+            supabase,
+            currentWorkspace.id,
+            userId,
+            memory,
+            image,
+          );
+        },
+        "No se pudo guardar el recuerdo. Revisa la fotografía e inténtalo otra vez.",
+      );
+
+      if (result.error) return result;
+      commitMemories(
+        [result.data, ...memoriesRef.current].sort((a, b) =>
+          b.memoryDate.localeCompare(a.memoryDate),
+        ),
+      );
+      return result;
+    },
+    [commitMemories, performWrite, userId],
+  );
+
+  const removeMemory = useCallback(
+    async (memoryId) => {
+      const currentWorkspace = workspaceRef.current;
+      const memory = memoriesRef.current.find((item) => item.id === memoryId);
+      if (!currentWorkspace || !memory) return false;
+
+      const result = await performWrite(
+        () =>
+          deleteMemoryRemote(
+            supabase,
+            currentWorkspace.id,
+            memory.id,
+            memory.storagePath,
+          ),
+        "No se pudo eliminar el recuerdo.",
+      );
+
+      if (result.error) return false;
+      commitMemories(memoriesRef.current.filter((item) => item.id !== memoryId));
+      return true;
+    },
+    [commitMemories, performWrite],
+  );
 
   const flushNoteUpdate = useCallback(
     async (noteId) => {
@@ -570,12 +700,16 @@ export default function WorkspaceProvider({ children }) {
   }, [flushNoteUpdate, flushPriorities, refresh]);
 
   const value = {
+    addAlbum,
+    addMemory,
     addTask,
     clearCompletedTasks,
     clearSyncError: () => setSyncError(null),
     createNote,
     initializationError,
     loading,
+    albums,
+    memories,
     movePriority,
     notes,
     priorities,
@@ -584,6 +718,7 @@ export default function WorkspaceProvider({ children }) {
     retrySync,
     retryInitialization: loadWorkspace,
     removeNote,
+    removeMemory,
     removeTask,
     resetPriorities,
     saveQuickNote,
