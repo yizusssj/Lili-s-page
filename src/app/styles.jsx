@@ -61,6 +61,7 @@ export const styles = {
     background: "#962626", // (si quieres iOS/notion, aquí conviene un gris/negro suave)
     border: "1px solid #eee",
     boxShadow: "4px 6px 12px rgba(0,0,0,0.08)",
+    color: "#ffffff",
   },
 
   /* Footer sidebar */
@@ -75,17 +76,17 @@ export const styles = {
   tipText: { fontSize: 12, color: "#6b7280", lineHeight: 1.35 },
 
   /* Main y header */
-  main: { flex: 1, display: "flex", flexDirection: "column" },
+  main: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column" },
   header: {
     padding: "22px 26px",
     borderBottom: "1px solid #e7e5e4",
     background: "#E5E5EA",
   },
-  pageTitle: { fontSize: 22, fontWeight: 750 },
+  pageTitle: { margin: 0, fontSize: 22, fontWeight: 750 },
   pageSubtitle: { fontSize: 12, color: "#6b7280", marginTop: 4 },
 
   /* Contenedor de contenido */
-  content: { padding: 26 },
+  content: { width: "100%", padding: 26 },
   stack: { display: "flex", flexDirection: "column", gap: 14 },
   grid2: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 },
 
@@ -103,7 +104,7 @@ export const styles = {
     alignItems: "center",
     marginBottom: 10,
   },
-  blockTitle: { fontSize: 13, fontWeight: 650, color: "#111827" },
+  blockTitle: { margin: 0, fontSize: 13, fontWeight: 650, color: "#111827" },
 
   /* Texto general */
   p: { fontSize: 13, color: "#374151", lineHeight: 1.5 },
@@ -111,7 +112,7 @@ export const styles = {
 
   /* Textarea (QuickNote) */
   textarea: {
-    width: "95%",
+    width: "100%",
     border: "1px solid #e5e7eb",
     borderRadius: 12,
     padding: 10,
@@ -205,6 +206,21 @@ export const styles = {
     color: "#9ca3af",
     fontSize: 16,
     lineHeight: 1,
+  },
+
+  moveButtons: {
+    display: "flex",
+    gap: 4,
+  },
+  moveBtn: {
+    width: 28,
+    height: 28,
+    padding: 0,
+    border: "1px solid #e5e7eb",
+    borderRadius: 8,
+    background: "#fff",
+    color: "#374151",
+    cursor: "pointer",
   },
 
   /* Input inline (texto editable en Top 3) */

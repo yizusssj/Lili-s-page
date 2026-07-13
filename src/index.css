@@ -3,21 +3,96 @@
     Arial, "Apple Color Emoji", "Segoe UI Emoji";
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+}
+
 body {
   margin: 0;
 }
- /* === Responsive: tablet y móvil === */
+
+.appShell {
+  width: 100%;
+  max-width: 100vw;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+  outline: 3px solid #2563eb !important;
+  outline-offset: 2px;
+}
+
+button:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.4;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* === Responsive: tablet y móvil === */
 @media (max-width: 900px) {
   /* la app se vuelve columna */
   .appShell {
     flex-direction: column;
   }
 
+  .appShell > main {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
   /* sidebar pasa a “barra superior” */
   .sidebar {
     width: 100% !important;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
     border-right: none !important;
     border-bottom: 1px solid #e7e5e4;
+  }
+
+  .sidebar nav {
+    width: 100%;
+    min-width: 0;
+    flex-direction: row !important;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .sidebar nav button {
+    flex: 0 0 auto;
+  }
+
+  .sidebar > :last-child {
+    display: none;
   }
 
   /* menos padding en contenido */
@@ -36,8 +111,22 @@ body {
   .content {
     padding: 12px !important;
   }
+
+  .taskComposer {
+    flex-direction: column;
+  }
+
+  .taskComposer button {
+    width: 100%;
+  }
 }
 
 a[data-pin-do] {
   max-width: 100%;
+}
+
+.pinterestEmbed,
+.pinterestEmbed span,
+.pinterestEmbed iframe {
+  max-width: 100% !important;
 }

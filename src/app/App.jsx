@@ -1,6 +1,12 @@
 
-import { useMemo, useState, useEffect } from "react";
-import { styles } from "./styles"
+import { useEffect, useMemo, useRef, useState } from "react";
+import { readJSON, readText, writeJSON, writeText } from "../utils/storage.jsx";
+import { styles } from "./styles";
+
+const TODAY_STORAGE_KEY = "lili_today_top3_v1";
+const TODAY_DATE_KEY = "lili_today_date_v1";
+const QUICK_NOTE_STORAGE_KEY = "lili_quick_note_v1";
+const TASKS_STORAGE_KEY = "lili_tasks_v1";
 
 const PAGES = [
   { id: "today", name: "Hoy", icon: "✨" },
@@ -9,6 +15,46 @@ const PAGES = [
   { id: "memories", name: "Recuerdos", icon: "📷" },
   { id: "pinterest", name: "Pinterest", icon: "📌" },
 ];
+
+function createPriorities() {
+  return [
+    { id: crypto.randomUUID(), text: "Prioridad 1", done: false },
+    { id: crypto.randomUUID(), text: "Prioridad 2", done: false },
+    { id: crypto.randomUUID(), text: "Prioridad 3", done: false },
+  ];
+}
+
+function createTasks() {
+  return [
+    { id: crypto.randomUUID(), text: "Hacer tarea", done: false },
+    { id: crypto.randomUUID(), text: "Tomar agua", done: false },
+    { id: crypto.randomUUID(), text: "Tiempo para mí", done: false },
+  ];
+}
+
+function isItemList(value) {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (item) =>
+        item &&
+        typeof item.id === "string" &&
+        typeof item.text === "string" &&
+        typeof item.done === "boolean",
+    )
+  );
+}
+
+function isPriorityList(value) {
+  return isItemList(value) && value.length === 3;
+}
+
+function getLocalDateKey(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
 /**
  * App = componente raíz (root).
@@ -44,24 +90,28 @@ export default function App() {
           <div style={styles.brandIcon}>💗</div>
           <div>
             <div style={styles.brandTitle}>Workspace</div>
-            <div style={styles.brandSub}>para ella</div>
+            <div style={styles.brandSub}>de lili</div>
           </div>
         </div>
 
         {/* Menú: se genera a partir de PAGES */}
-        <nav style={styles.nav}>
+        <nav style={styles.nav} aria-label="Navegación principal">
           {PAGES.map((p) => {
             const isActive = p.id === active; // ¿este botón es el seleccionado?
             return (
               <button
+                type="button"
                 key={p.id} // clave única requerida en listas
                 onClick={() => setActive(p.id)} // cambia pantalla
+                aria-current={isActive ? "page" : undefined}
                 style={{
                   ...styles.navItem, // estilos base
                   ...(isActive ? styles.navItemActive : {}), // estilos cuando está activo
                 }}
               >
-                <span style={{ width: 22, textAlign: "center" }}>{p.icon}</span>
+                <span aria-hidden="true" style={{ width: 22, textAlign: "center" }}>
+                  {p.icon}
+                </span>
                 <span>{p.name}</span>
               </button>
             );
@@ -71,7 +121,7 @@ export default function App() {
         {/* Footer de sidebar (textito / tip) */}
         <div style={styles.sidebarFooter}>
           <div style={styles.tipTitle}>Tip</div>
-          <div style={styles.tipText}>keep it real chaval.</div>
+          <div style={styles.tipText}>y si si?.</div>
         </div>
       </aside>
 
@@ -80,7 +130,7 @@ export default function App() {
         {/* Header principal: muestra el nombre de la página activa */}
         <header style={styles.header}>
           <div>
-            <div style={styles.pageTitle}>{activePage?.name ?? "Página"}</div>
+            <h1 style={styles.pageTitle}>{activePage?.name ?? "Página"}</h1>
             <div style={styles.pageSubtitle}>Organizador</div>
           </div>
         </header>
@@ -112,7 +162,7 @@ function Block({ title, children, right }) {
     <section style={styles.block}>
       <div style={styles.blockTop}>
         <div>
-          <div style={styles.blockTitle}>{title}</div>
+          <h2 style={styles.blockTitle}>{title}</h2>
         </div>
 
         {/* Si `right` existe, lo renderiza; si no, nada */}
@@ -134,13 +184,6 @@ function Block({ title, children, right }) {
    - Frase del día (estática)
    ============================================================ */
 function Today() {
-  // Keys para localStorage (persistencia en el navegador)
-  const STORAGE_KEY = "lili_today_top3_v1"; // prioridades (array)
-  const DATE_KEY = "lili_today_date_v1"; // fecha del último día registrado
-
-  // YYYY-MM-DD (sirve para detectar cambio de día)
-  const todayStr = new Date().toISOString().slice(0, 10);
-
   /**
    * items = arreglo de prioridades:
    * [{ id, text, done }, ...]
@@ -149,35 +192,17 @@ function Today() {
    * solo una vez al montar el componente.
    */
   const [items, setItems] = useState(() => {
-    try {
-      const lastDate = localStorage.getItem(DATE_KEY);
-      const raw = localStorage.getItem(STORAGE_KEY);
+    const today = getLocalDateKey();
+    const lastDate = readText(TODAY_DATE_KEY);
+    let initial = readJSON(TODAY_STORAGE_KEY, createPriorities(), isPriorityList);
 
-      // Si había algo guardado, lo usa; si no, crea defaults
-      let initial = raw
-        ? JSON.parse(raw)
-        : [
-            { id: crypto.randomUUID(), text: "Prioridad 1", done: false },
-            { id: crypto.randomUUID(), text: "Prioridad 2", done: false },
-            { id: crypto.randomUUID(), text: "Prioridad 3", done: false },
-          ];
-
-      // Reset diario: si cambió el día, reset solo `done`
-      if (lastDate !== todayStr) {
-        initial = initial.map((x) => ({ ...x, done: false }));
-        localStorage.setItem(DATE_KEY, todayStr);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
-      }
-
-      return initial;
-    } catch {
-      // Si falla parseo o localStorage, regresa defaults
-      return [
-        { id: crypto.randomUUID(), text: "Prioridad 1", done: false },
-        { id: crypto.randomUUID(), text: "Prioridad 2", done: false },
-        { id: crypto.randomUUID(), text: "Prioridad 3", done: false },
-      ];
+    if (lastDate !== today) {
+      initial = initial.map((item) => ({ ...item, done: false }));
+      writeText(TODAY_DATE_KEY, today);
+      writeJSON(TODAY_STORAGE_KEY, initial);
     }
+
+    return initial;
   });
 
   /**
@@ -185,8 +210,29 @@ function Today() {
    * - Cuando items cambia, lo serializamos y guardamos.
    */
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    writeJSON(TODAY_STORAGE_KEY, items);
   }, [items]);
+
+  // Programa el siguiente reinicio para la medianoche local.
+  useEffect(() => {
+    let timeoutId;
+
+    function scheduleNextDay() {
+      const now = new Date();
+      const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      const delay = nextMidnight.getTime() - now.getTime() + 100;
+
+      timeoutId = window.setTimeout(() => {
+        const nextDate = getLocalDateKey();
+        setItems((previous) => previous.map((item) => ({ ...item, done: false })));
+        writeText(TODAY_DATE_KEY, nextDate);
+        scheduleNextDay();
+      }, delay);
+    }
+
+    scheduleNextDay();
+    return () => window.clearTimeout(timeoutId);
+  }, []);
 
   // toggle: invierte done en un item (marcar/desmarcar)
   function toggle(id) {
@@ -201,7 +247,18 @@ function Today() {
   // resetToday: pone done=false a todos (como “reiniciar el día”)
   function resetToday() {
     setItems((prev) => prev.map((x) => ({ ...x, done: false })));
-    localStorage.setItem(DATE_KEY, todayStr);
+    writeText(TODAY_DATE_KEY, getLocalDateKey());
+  }
+
+  function moveItem(from, to) {
+    if (to < 0 || to >= items.length || from === to) return;
+
+    setItems((previous) => {
+      const copy = [...previous];
+      const [moved] = copy.splice(from, 1);
+      copy.splice(to, 0, moved);
+      return copy;
+    });
   }
 
   return (
@@ -219,7 +276,12 @@ function Today() {
         <Block
           title="Top 3 prioridades"
           right={
-            <button style={styles.ghostBtn} onClick={resetToday} title="Reinicia checks de hoy">
+            <button
+              type="button"
+              style={styles.ghostBtn}
+              onClick={resetToday}
+              title="Reinicia checks de hoy"
+            >
               Reiniciar hoy
             </button>
           }
@@ -252,30 +314,27 @@ function Today() {
 
                   if (Number.isNaN(from) || from === to) return;
 
-                  setItems((prev) => {
-                    const copy = [...prev];
-                    const [moved] = copy.splice(from, 1);
-                    copy.splice(to, 0, moved);
-                    return copy;
-                  });
+                  moveItem(from, to);
                 }}
               >
                 {/* Handle visual para indicar que se puede arrastrar */}
-                <span style={styles.dragHandle} title="Arrastra para reordenar">
+                <span aria-hidden="true" style={styles.dragHandle} title="Arrastra para reordenar">
                   ⋮⋮
                 </span>
 
                 {/* Checkbox + input editable */}
-                <label style={{ display: "flex", alignItems: "center", gap: 10, flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1 }}>
                   <input
                     type="checkbox"
                     checked={it.done}
                     onChange={() => toggle(it.id)}
+                    aria-label={`${it.done ? "Desmarcar" : "Marcar"} ${it.text || `prioridad ${idx + 1}`}`}
                     style={{ width: 16, height: 16 }}
                   />
                   <input
                     value={it.text}
                     onChange={(e) => updateText(it.id, e.target.value)}
+                    aria-label={`Texto de prioridad ${idx + 1}`}
                     placeholder={`Prioridad ${idx + 1}`}
                     style={{
                       ...styles.inlineInput,
@@ -283,7 +342,28 @@ function Today() {
                       color: it.done ? "#6b7280" : "#111827",
                     }}
                   />
-                </label>
+                </div>
+
+                <div style={styles.moveButtons}>
+                  <button
+                    type="button"
+                    style={styles.moveBtn}
+                    onClick={() => moveItem(idx, idx - 1)}
+                    disabled={idx === 0}
+                    aria-label={`Mover ${it.text || `prioridad ${idx + 1}`} hacia arriba`}
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    style={styles.moveBtn}
+                    onClick={() => moveItem(idx, idx + 1)}
+                    disabled={idx === items.length - 1}
+                    aria-label={`Mover ${it.text || `prioridad ${idx + 1}`} hacia abajo`}
+                  >
+                    ↓
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -315,30 +395,33 @@ function Today() {
    - saved: flag para mostrar “Guardado ✓” temporal
    ============================================================ */
 function QuickNote() {
-  const STORAGE_KEY = "lili_quick_note_v1";
-
   // Carga inicial desde localStorage (solo una vez)
-  const [text, setText] = useState(() => {
-    try {
-      return localStorage.getItem(STORAGE_KEY) ?? "";
-    } catch {
-      return "";
-    }
-  });
+  const [text, setText] = useState(() => readText(QUICK_NOTE_STORAGE_KEY));
 
-  // Para UX: mensaje “Guardado ✓”
-  const [saved, setSaved] = useState(false);
+  // Para UX: mensaje de éxito o error temporal.
+  const [saveStatus, setSaveStatus] = useState("idle");
+  const statusTimeout = useRef(null);
+
+  useEffect(
+    () => () => {
+      window.clearTimeout(statusTimeout.current);
+    },
+    [],
+  );
 
   // Guardar manual
   function save() {
-    localStorage.setItem(STORAGE_KEY, text);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 1200);
+    const wasSaved = writeText(QUICK_NOTE_STORAGE_KEY, text);
+    setSaveStatus(wasSaved ? "saved" : "error");
+    window.clearTimeout(statusTimeout.current);
+    statusTimeout.current = window.setTimeout(() => setSaveStatus("idle"), 1800);
   }
 
   return (
     <>
       <textarea
+        id="quick-note"
+        aria-label="Nota rápida"
         placeholder="Escribe algo..."
         value={text}
         onChange={(e) => setText(e.target.value)}
@@ -347,11 +430,14 @@ function QuickNote() {
       />
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}>
-        <button style={styles.primaryBtn} onClick={save}>
+        <button type="button" style={styles.primaryBtn} onClick={save}>
           Guardar
         </button>
 
-        {saved && <span style={{ fontSize: 12, color: "#16a34a" }}>Guardado ✓</span>}
+        <span aria-live="polite" style={{ fontSize: 12, color: saveStatus === "error" ? "#b91c1c" : "#15803d" }}>
+          {saveStatus === "saved" && "Guardado ✓"}
+          {saveStatus === "error" && "No se pudo guardar"}
+        </span>
       </div>
     </>
   );
@@ -368,30 +454,17 @@ function QuickNote() {
    - Persistir en localStorage
    ============================================================ */
 function Tasks() {
-  const STORAGE_KEY = "lili_tasks_v1";
-
   // input controlado (lo que escribes antes de “Añadir”)
   const [newTask, setNewTask] = useState("");
 
   // tasks: carga desde localStorage o defaults
   const [tasks, setTasks] = useState(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw
-        ? JSON.parse(raw)
-        : [
-            { id: crypto.randomUUID(), text: "Hacer tarea", done: false },
-            { id: crypto.randomUUID(), text: "Tomar agua", done: false },
-            { id: crypto.randomUUID(), text: "Tiempo para mí", done: false },
-          ];
-    } catch {
-      return [];
-    }
+    return readJSON(TASKS_STORAGE_KEY, createTasks(), isItemList);
   });
 
   // Persistencia: cuando tasks cambia, guarda JSON en localStorage
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    writeJSON(TASKS_STORAGE_KEY, tasks);
   }, [tasks]);
 
   // Agregar tarea nueva (con trim para evitar strings vacíos)
@@ -426,14 +499,18 @@ function Tasks() {
       <Block
         title="Tareas ✅"
         right={
-          <button style={styles.ghostBtn} onClick={clearDone}>
+          <button type="button" style={styles.ghostBtn} onClick={clearDone}>
             Limpiar hechas
           </button>
         }
       >
         {/* Input + botón */}
-        <div style={{ display: "flex", gap: 10 }}>
+        <div style={{ display: "flex", gap: 10 }} className="taskComposer">
+          <label htmlFor="new-task" className="srOnly">
+            Nueva tarea
+          </label>
           <input
+            id="new-task"
             value={newTask}
             onChange={(e) => setNewTask(e.target.value)}
             onKeyDown={(e) => {
@@ -443,7 +520,7 @@ function Tasks() {
             placeholder="Agregar tarea..."
             style={styles.input}
           />
-          <button style={styles.primaryBtnSmall} onClick={addTask}>
+          <button type="button" style={styles.primaryBtnSmall} onClick={addTask}>
             + Añadir
           </button>
         </div>
@@ -465,6 +542,7 @@ function Tasks() {
                     type="checkbox"
                     checked={t.done}
                     onChange={() => toggleTask(t.id)}
+                    aria-label={`${t.done ? "Desmarcar" : "Marcar"} ${t.text}`}
                     style={{ width: 16, height: 16 }}
                   />
                   <span
@@ -478,7 +556,13 @@ function Tasks() {
                   </span>
                 </label>
 
-                <button onClick={() => deleteTask(t.id)} style={styles.iconBtn} title="Eliminar">
+                <button
+                  type="button"
+                  onClick={() => deleteTask(t.id)}
+                  style={styles.iconBtn}
+                  title="Eliminar"
+                  aria-label={`Eliminar ${t.text}`}
+                >
                   🗑️
                 </button>
               </div>
@@ -490,10 +574,10 @@ function Tasks() {
       {/* Placeholder: lista sugerida */}
       <Block title="Listas sugeridas">
         <ul style={styles.list}>
-          <li>• Escuela</li>
-          <li>• Personal</li>
-          <li>• Casa</li>
-          <li>• Recurrentes</li>
+          <li>Escuela</li>
+          <li>Personal</li>
+          <li>Casa</li>
+          <li>Recurrentes</li>
         </ul>
       </Block>
     </div>
@@ -550,12 +634,13 @@ function Pinterest() {
   const boards = [
     {
       name: "my way 🎤💵💚🧑‍🧑‍🧒‍🧒🫂📈🖥️",
-      url: "https://mx.pinterest.com/cosmologyp/my-way/?invite_code=f8fc181c5c89425d8678b9a160f0eaad&sender=697002617238299353",
+      url: "https://mx.pinterest.com/cosmologyp/my-way/",
     },
   ];
 
   // Board activo
   const [activeBoard, setActiveBoard] = useState(boards[0]?.url ?? "");
+  const [widgetStatus, setWidgetStatus] = useState("loading");
 
   /**
    * (A) Cargar el script oficial UNA SOLA VEZ:
@@ -563,14 +648,31 @@ function Pinterest() {
    */
   useEffect(() => {
     const id = "pinterest-widget-js";
-    if (document.getElementById(id)) return;
+    let script = document.getElementById(id);
 
-    const s = document.createElement("script");
-    s.id = id;
-    s.async = true;
-    s.defer = true;
-    s.src = "https://assets.pinterest.com/js/pinit.js";
-    document.body.appendChild(s);
+    const handleLoad = () => setWidgetStatus("ready");
+    const handleError = () => setWidgetStatus("error");
+
+    if (!script) {
+      script = document.createElement("script");
+      script.id = id;
+      script.async = true;
+      script.defer = true;
+      script.src = "https://assets.pinterest.com/js/pinit.js";
+      document.body.appendChild(script);
+    }
+
+    script.addEventListener("load", handleLoad);
+    script.addEventListener("error", handleError);
+
+    if (window.PinUtils?.build) {
+      handleLoad();
+    }
+
+    return () => {
+      script.removeEventListener("load", handleLoad);
+      script.removeEventListener("error", handleError);
+    };
   }, []);
 
   /**
@@ -579,6 +681,8 @@ function Pinterest() {
    * - setTimeout da tiempo a React a renderizar el <a> antes del build()
    */
   useEffect(() => {
+    if (widgetStatus !== "ready") return undefined;
+
     const t = setTimeout(() => {
       try {
         if (window.PinUtils && window.PinUtils.build) {
@@ -590,7 +694,7 @@ function Pinterest() {
     }, 150);
 
     return () => clearTimeout(t);
-  }, [activeBoard]);
+  }, [activeBoard, widgetStatus]);
 
   return (
     <div style={styles.stack}>
@@ -603,8 +707,10 @@ function Pinterest() {
             const isActive = b.url === activeBoard;
             return (
               <button
+                type="button"
                 key={b.url}
                 onClick={() => setActiveBoard(b.url)}
+                aria-pressed={isActive}
                 style={{ ...styles.tabBtn, ...(isActive ? styles.tabBtnActive : {}) }}
               >
                 {b.name}
@@ -617,17 +723,24 @@ function Pinterest() {
       <Block title="Vista del board">
         {/* key={activeBoard} fuerza remount: React destruye y crea de nuevo
             el <a>, ayudando a Pinterest a detectar el cambio */}
-        <div key={activeBoard}>
+        <div key={activeBoard} className="pinterestEmbed">
           <a
             data-pin-do="embedBoard"
             data-pin-board-width="900"
             data-pin-scale-height="900"
             data-pin-scale-width="115"
             href={activeBoard}
+            aria-label="Abrir el board seleccionado en Pinterest"
           >
             Ver en Pinterest
           </a>
         </div>
+
+        {widgetStatus === "error" && (
+          <div role="status" style={{ marginTop: 10, fontSize: 12, color: "#b91c1c" }}>
+            No se pudo cargar Pinterest. Puedes abrir el board con el enlace de arriba.
+          </div>
+        )}
 
         <div style={{ marginTop: 10, fontSize: 12, color: "#6b7280" }}>
           Si tarda, cambia de tab y vuelve (Pinterest a veces se pone lento).
