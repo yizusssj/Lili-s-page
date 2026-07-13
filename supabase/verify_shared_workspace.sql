@@ -68,6 +68,13 @@ select id, name, data_initialized_at
 from public.workspaces
 order by created_at;
 
+-- Después de 20260713013000_optional_memory_details.sql: is_nullable = YES.
+select table_name, column_name, is_nullable
+from information_schema.columns
+where table_schema = 'public'
+  and table_name = 'memories'
+  and column_name = 'title';
+
 -- Después de 20260713004000_memories_gallery.sql: bucket privado y límite de 8 MB.
 select id, name, public, file_size_limit, allowed_mime_types
 from storage.buckets

@@ -64,4 +64,6 @@ La aplicación acepta JPG, PNG, WebP y HEIC de hasta 20 MB. Antes de subir cada 
 
 Después ejecuta `migrations/20260713010000_memory_albums.sql`. Esta segunda migración permite crear álbumes libres —por ejemplo, personas, viajes, celebraciones o momentos personales— y relaciona cada fotografía con uno de ellos. Si ya existían recuerdos, los conserva dentro de un álbum llamado `Momentos`.
 
+Por último ejecuta `migrations/20260713013000_optional_memory_details.sql`. Así cada recuerdo puede guardarse solamente con fotografía y fecha; el título y la minicarta quedan opcionales.
+
 Finalmente vuelve a correr `verify_shared_workspace.sql`. Deben aparecer ocho tablas públicas con RLS, treinta y dos políticas públicas, el bucket privado y tres políticas sobre `storage.objects`.

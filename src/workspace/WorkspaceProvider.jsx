@@ -420,7 +420,6 @@ export default function WorkspaceProvider({ children }) {
         !currentWorkspace ||
         !userId ||
         !albumsRef.current.some((album) => album.id === albumId) ||
-        !normalizedTitle ||
         !file ||
         !validMemoryDate
       ) {
@@ -434,7 +433,7 @@ export default function WorkspaceProvider({ children }) {
         id,
         memoryDate,
         storagePath: `${currentWorkspace.id}/${id}.jpg`,
-        title: normalizedTitle,
+        title: normalizedTitle || null,
       };
 
       const result = await performWrite(

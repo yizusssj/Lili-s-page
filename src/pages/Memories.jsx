@@ -49,6 +49,7 @@ export default function Memories() {
   const [deleting, setDeleting] = useState(false);
   const [selectedMemoryId, setSelectedMemoryId] = useState(null);
   const closeButtonRef = useRef(null);
+  const composerCloseRef = useRef(null);
 
   const selectedAlbum = albums.find((album) => album.id === selectedAlbumId) ?? null;
   const selectedMemory =
@@ -93,6 +94,36 @@ export default function Memories() {
     };
   }, [deleting, selectedMemory]);
 
+  useEffect(() => {
+    if (!memoryFormOpen) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape" && !uploading) {
+        setTitle("");
+        setDescription("");
+        setMemoryDate(getLocalDateKey());
+        setFile(null);
+        setFormError("");
+        setMemoryFormOpen(false);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [memoryFormOpen, uploading]);
+
+  useEffect(() => {
+    if (!memoryFormOpen) return undefined;
+    const focusTimer = window.setTimeout(() => composerCloseRef.current?.focus(), 0);
+    return () => window.clearTimeout(focusTimer);
+  }, [memoryFormOpen]);
+
   function resetAlbumForm() {
     setAlbumTitle("");
     setAlbumDescription("");
@@ -121,9 +152,8 @@ export default function Memories() {
     setCreatingAlbum(false);
 
     if (result.error) {
-      const duplicate = result.error.code === "23505";
       setAlbumError(
-        duplicate
+        result.error.code === "23505"
           ? "Ya existe un álbum con ese nombre."
           : result.error.message || "No se pudo crear el álbum.",
       );
@@ -172,14 +202,9 @@ export default function Memories() {
 
   async function submitMemory(event) {
     event.preventDefault();
-    const normalizedTitle = title.trim();
 
     if (!selectedAlbum) {
       setFormError("Primero selecciona un álbum.");
-      return;
-    }
-    if (!normalizedTitle) {
-      setFormError("Escribe un título para el recuerdo.");
       return;
     }
     if (!file) {
@@ -198,12 +223,12 @@ export default function Memories() {
       description,
       file,
       memoryDate,
-      title: normalizedTitle,
+      title,
     });
     setUploading(false);
 
     if (result.error) {
-      setFormError(result.error.message || "No se pudo guardar el recuerdo.");
+      setFormError(result.error.message || "No se pudo guardar la fotografía.");
       return;
     }
 
@@ -214,8 +239,9 @@ export default function Memories() {
 
   async function deleteSelectedMemory() {
     if (!selectedMemory || deleting) return;
+    const memoryName = selectedMemory.title || formatCalendarDate(selectedMemory.memoryDate);
     const confirmed = window.confirm(
-      `¿Eliminar “${selectedMemory.title}” y su fotografía? Esta acción no se puede deshacer.`,
+      `¿Eliminar “${memoryName}” y su fotografía? Esta acción no se puede deshacer.`,
     );
     if (!confirmed) return;
 
@@ -227,74 +253,13 @@ export default function Memories() {
 
   return (
     <div style={styles.stack}>
-      <Block
-        title={
-          <SectionTitle
-            icon={selectedAlbum ? Images : Camera}
-            label={selectedAlbum?.title ?? "Recuerdos"}
-            color="#7e22ce"
-          />
-        }
-        right={
-          selectedAlbum ? (
-            <div className="memoryHeaderActions">
-              <button type="button" style={styles.ghostBtn} onClick={leaveAlbum}>
-                <ArrowLeft aria-hidden="true" size={16} strokeWidth={1.9} />
-                Álbumes
-              </button>
-              <button
-                type="button"
-                style={styles.primaryBtnSmall}
-                onClick={() => {
-                  if (memoryFormOpen) closeMemoryForm();
-                  else setMemoryFormOpen(true);
-                }}
-                aria-expanded={memoryFormOpen}
-                disabled={uploading}
-              >
-                {memoryFormOpen ? (
-                  <X aria-hidden="true" size={16} strokeWidth={1.9} />
-                ) : (
-                  <ImagePlus aria-hidden="true" size={16} strokeWidth={1.9} />
-                )}
-                {memoryFormOpen ? "Cerrar" : "Añadir foto"}
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              style={styles.primaryBtnSmall}
-              onClick={() => {
-                if (albumFormOpen) closeAlbumForm();
-                else setAlbumFormOpen(true);
-              }}
-              aria-expanded={albumFormOpen}
-              disabled={creatingAlbum}
-            >
-              {albumFormOpen ? (
-                <X aria-hidden="true" size={16} strokeWidth={1.9} />
-              ) : (
-                <FolderPlus aria-hidden="true" size={16} strokeWidth={1.9} />
-              )}
-              {albumFormOpen ? "Cerrar" : "Nuevo álbum"}
-            </button>
-          )
-        }
-      >
-        <div style={styles.p}>
-          {selectedAlbum
-            ? selectedAlbum.description || "Una colección de momentos que vale la pena conservar."
-            : "Crea álbumes para cualquier parte de tu vida: personas, viajes, celebraciones o momentos solo tuyos."}
-        </div>
-      </Block>
-
       {!selectedAlbum && albumFormOpen && (
         <Block title="Crear un álbum">
           <form className="albumForm" onSubmit={(event) => void submitAlbum(event)}>
             <div className="albumFormIntro" aria-hidden="true">
               <FolderPlus size={31} strokeWidth={1.5} />
               <strong>Una nueva colección</strong>
-              <span>Podrás llenarla de fotografías y pequeñas historias.</span>
+              <span>El tema, las personas y los momentos los eliges tú.</span>
             </div>
             <div className="memoryFields">
               <label htmlFor="album-title" style={styles.fieldLabel}>
@@ -318,9 +283,9 @@ export default function Memories() {
                 id="album-description"
                 value={albumDescription}
                 onChange={(event) => setAlbumDescription(event.target.value)}
-                placeholder="¿Qué quieres guardar en este álbum?"
+                placeholder="Una frase corta sobre este álbum"
                 maxLength={500}
-                rows={4}
+                rows={3}
                 style={styles.textarea}
                 disabled={creatingAlbum}
               />
@@ -364,14 +329,45 @@ export default function Memories() {
       )}
 
       {!selectedAlbum && (
-        <Block title={`Tus álbumes (${albums.length})`}>
+        <Block
+          title={
+            <SectionTitle
+              icon={Camera}
+              label={`Álbumes (${albums.length})`}
+              color="#7e22ce"
+            />
+          }
+          right={
+            <button
+              type="button"
+              style={styles.primaryBtnSmall}
+              onClick={() => {
+                if (albumFormOpen) closeAlbumForm();
+                else setAlbumFormOpen(true);
+              }}
+              aria-expanded={albumFormOpen}
+              disabled={creatingAlbum}
+            >
+              {albumFormOpen ? (
+                <X aria-hidden="true" size={16} strokeWidth={1.9} />
+              ) : (
+                <FolderPlus aria-hidden="true" size={16} strokeWidth={1.9} />
+              )}
+              {albumFormOpen ? "Cerrar" : "Nuevo álbum"}
+            </button>
+          }
+        >
+          <p className="albumSectionLead">
+            Una colección para cada persona, viaje o etapa de tu vida.
+          </p>
+
           {albums.length === 0 ? (
             <div className="albumEmptyState">
               <div aria-hidden="true" style={styles.emptyIcon}>
                 <Images size={25} strokeWidth={1.6} />
               </div>
               <div style={{ fontWeight: 650 }}>Tu historia puede empezar donde quieras</div>
-              <div style={styles.p}>Estas son solo ideas; el nombre y el tema los eliges tú.</div>
+              <div style={styles.p}>Estas son ideas; puedes crear cualquier tipo de álbum.</div>
               <div className="albumIdeas" aria-label="Ideas para álbumes">
                 {ALBUM_IDEAS.map(({ icon: Icon, label }) => (
                   <button
@@ -411,7 +407,7 @@ export default function Memories() {
                       <img src={album.cover.imageUrl} alt="" loading="lazy" decoding="async" />
                     ) : (
                       <span className="albumCardPlaceholder" aria-hidden="true">
-                        <Images size={31} strokeWidth={1.35} />
+                        <Images size={29} strokeWidth={1.35} />
                       </span>
                     )}
                     <span className="albumCardCount">
@@ -420,7 +416,7 @@ export default function Memories() {
                   </span>
                   <span className="albumCardBody">
                     <strong>{album.title}</strong>
-                    <span>{album.description || "Una colección lista para nuevos momentos."}</span>
+                    <span>{album.description || "Lista para nuevos momentos."}</span>
                   </span>
                 </button>
               ))}
@@ -429,117 +425,39 @@ export default function Memories() {
         </Block>
       )}
 
-      {selectedAlbum && memoryFormOpen && (
-        <Block title={`Añadir a ${selectedAlbum.title}`}>
-          <form className="memoryForm" onSubmit={(event) => void submitMemory(event)}>
-            <label className="memoryDropzone">
-              <input
-                className="srOnly"
-                type="file"
-                accept={ACCEPTED_IMAGES}
-                onChange={(event) => selectFile(event.target.files?.[0] ?? null)}
-                disabled={uploading}
-              />
-
-              {previewUrl ? (
-                <img src={previewUrl} alt="Vista previa del recuerdo" />
-              ) : (
-                <span className="memoryDropzoneEmpty">
-                  <span className="memoryDropzoneIcon" aria-hidden="true">
-                    <Upload size={25} strokeWidth={1.6} />
-                  </span>
-                  <strong>Seleccionar fotografía</strong>
-                  <small>JPG, PNG, WebP o HEIC · máximo 20 MB</small>
-                </span>
-              )}
-
-              {file && <span className="memoryFileName">{file.name}</span>}
-            </label>
-
-            <div className="memoryFields">
-              <label htmlFor="memory-title" style={styles.fieldLabel}>
-                Título
-              </label>
-              <input
-                id="memory-title"
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                placeholder="Un día para recordar"
-                maxLength={120}
-                style={styles.input}
-                disabled={uploading}
-              />
-
-              <label htmlFor="memory-date" style={styles.fieldLabel}>
-                Fecha del recuerdo
-              </label>
-              <input
-                id="memory-date"
-                type="date"
-                value={memoryDate}
-                max={getLocalDateKey()}
-                onChange={(event) => setMemoryDate(event.target.value)}
-                style={styles.input}
-                disabled={uploading}
-              />
-
-              <label htmlFor="memory-description" style={styles.fieldLabel}>
-                Minicarta <span className="memoryOptional">(opcional)</span>
-              </label>
-              <textarea
-                id="memory-description"
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-                placeholder="Escribe por qué este momento es especial..."
-                maxLength={4000}
-                rows={6}
-                style={styles.textarea}
-                disabled={uploading}
-              />
-
-              {formError && (
-                <div className="memoryFormError" role="alert">
-                  {formError}
-                </div>
-              )}
-
-              <div className="memoryFormActions">
-                <button
-                  type="button"
-                  style={styles.ghostBtn}
-                  onClick={closeMemoryForm}
-                  disabled={uploading}
-                >
-                  Cancelar
-                </button>
-                <button type="submit" style={styles.primaryBtnSmall} disabled={uploading}>
-                  {uploading ? (
-                    <LoaderCircle
-                      aria-hidden="true"
-                      className="syncSpinner"
-                      size={16}
-                      strokeWidth={1.8}
-                    />
-                  ) : (
-                    <Upload aria-hidden="true" size={16} strokeWidth={1.8} />
-                  )}
-                  {uploading ? "Preparando y subiendo..." : "Guardar recuerdo"}
-                </button>
-              </div>
-            </div>
-          </form>
-        </Block>
-      )}
-
       {selectedAlbum && (
-        <Block title={`${selectedAlbum.title} (${albumMemories.length})`}>
+        <Block
+          title={
+            <SectionTitle icon={Images} label={selectedAlbum.title} color="#7e22ce" />
+          }
+          right={
+            <div className="memoryHeaderActions">
+              <button type="button" style={styles.ghostBtn} onClick={leaveAlbum}>
+                <ArrowLeft aria-hidden="true" size={16} strokeWidth={1.9} />
+                Álbumes
+              </button>
+              <button
+                type="button"
+                style={styles.primaryBtnSmall}
+                onClick={() => setMemoryFormOpen(true)}
+              >
+                <ImagePlus aria-hidden="true" size={16} strokeWidth={1.9} />
+                Añadir foto
+              </button>
+            </div>
+          }
+        >
+          {selectedAlbum.description && (
+            <p className="albumSectionLead">{selectedAlbum.description}</p>
+          )}
+
           {albumMemories.length === 0 ? (
-            <div style={styles.emptyState}>
+            <div className="albumEmptyState albumEmptyStateCompact">
               <div aria-hidden="true" style={styles.emptyIcon}>
                 <ImagePlus size={25} strokeWidth={1.6} />
               </div>
               <div style={{ fontWeight: 650 }}>Este álbum todavía está vacío</div>
-              <div style={styles.p}>Añade la primera fotografía cuando quieras.</div>
+              <div style={styles.p}>Solo necesitas elegir una foto y su fecha.</div>
               <button
                 type="button"
                 style={styles.primaryBtnSmall}
@@ -551,34 +469,179 @@ export default function Memories() {
             </div>
           ) : (
             <div className="memoryGallery">
-              {albumMemories.map((memory) => (
-                <button
-                  type="button"
-                  className="memoryCard"
-                  key={memory.id}
-                  onClick={() => setSelectedMemoryId(memory.id)}
-                  aria-label={`Abrir recuerdo ${memory.title}`}
-                >
-                  <span className="memoryCardImage">
-                    {memory.imageUrl ? (
-                      <img src={memory.imageUrl} alt="" loading="lazy" decoding="async" />
-                    ) : (
-                      <ImagePlus aria-hidden="true" size={28} strokeWidth={1.5} />
-                    )}
-                  </span>
-                  <span className="memoryCardBody">
-                    <span className="memoryCardDate">
-                      <CalendarDays aria-hidden="true" size={13} strokeWidth={1.8} />
-                      {formatCalendarDate(memory.memoryDate)}
+              {albumMemories.map((memory) => {
+                const formattedDate = formatCalendarDate(memory.memoryDate);
+                return (
+                  <button
+                    type="button"
+                    className="memoryCard"
+                    key={memory.id}
+                    onClick={() => setSelectedMemoryId(memory.id)}
+                    aria-label={
+                      memory.title
+                        ? `Abrir recuerdo ${memory.title}`
+                        : `Abrir fotografía del ${formattedDate}`
+                    }
+                  >
+                    <span className="memoryCardImage">
+                      {memory.imageUrl ? (
+                        <img src={memory.imageUrl} alt="" loading="lazy" decoding="async" />
+                      ) : (
+                        <ImagePlus aria-hidden="true" size={28} strokeWidth={1.5} />
+                      )}
                     </span>
-                    <strong>{memory.title}</strong>
-                    {memory.description && <span>{memory.description}</span>}
-                  </span>
-                </button>
-              ))}
+                    <span className="memoryCardBody">
+                      <span className="memoryCardDate">
+                        <CalendarDays aria-hidden="true" size={13} strokeWidth={1.8} />
+                        {formattedDate}
+                      </span>
+                      {memory.title && <strong>{memory.title}</strong>}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           )}
         </Block>
+      )}
+
+      {selectedAlbum && memoryFormOpen && (
+        <div
+          className="memoryComposerBackdrop"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !uploading) closeMemoryForm();
+          }}
+        >
+          <section
+            className="memoryComposer"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="memory-composer-title"
+          >
+            <header className="memoryComposerHeader">
+              <div>
+                <h2 id="memory-composer-title">Añadir fotografía</h2>
+                <p>{selectedAlbum.title}</p>
+              </div>
+              <button
+                ref={composerCloseRef}
+                type="button"
+                className="memoryModalClose memoryComposerClose"
+                onClick={closeMemoryForm}
+                aria-label="Cerrar formulario"
+                disabled={uploading}
+              >
+                <X aria-hidden="true" size={19} strokeWidth={1.8} />
+              </button>
+            </header>
+
+            <form className="memoryForm" onSubmit={(event) => void submitMemory(event)}>
+              <label className="memoryDropzone">
+                <input
+                  className="srOnly"
+                  type="file"
+                  accept={ACCEPTED_IMAGES}
+                  onChange={(event) => selectFile(event.target.files?.[0] ?? null)}
+                  disabled={uploading}
+                />
+
+                {previewUrl ? (
+                  <img src={previewUrl} alt="Vista previa del recuerdo" />
+                ) : (
+                  <span className="memoryDropzoneEmpty">
+                    <span className="memoryDropzoneIcon" aria-hidden="true">
+                      <Upload size={25} strokeWidth={1.6} />
+                    </span>
+                    <strong>Elegir fotografía</strong>
+                    <small>JPG, PNG, WebP o HEIC · máximo 20 MB</small>
+                  </span>
+                )}
+
+                {file && <span className="memoryFileName">{file.name}</span>}
+              </label>
+
+              <div className="memoryFields memoryComposerFields">
+                <label htmlFor="memory-date" style={styles.fieldLabel}>
+                  Fecha
+                </label>
+                <input
+                  id="memory-date"
+                  type="date"
+                  value={memoryDate}
+                  max={getLocalDateKey()}
+                  onChange={(event) => setMemoryDate(event.target.value)}
+                  style={styles.input}
+                  disabled={uploading}
+                />
+
+                <details className="memoryOptionalDetails">
+                  <summary>
+                    <Plus aria-hidden="true" size={15} strokeWidth={1.8} />
+                    Añadir título o minicarta
+                  </summary>
+                  <div className="memoryOptionalFields">
+                    <label htmlFor="memory-title" style={styles.fieldLabel}>
+                      Título <span className="memoryOptional">(opcional)</span>
+                    </label>
+                    <input
+                      id="memory-title"
+                      value={title}
+                      onChange={(event) => setTitle(event.target.value)}
+                      placeholder="Un día para recordar"
+                      maxLength={120}
+                      style={styles.input}
+                      disabled={uploading}
+                    />
+
+                    <label htmlFor="memory-description" style={styles.fieldLabel}>
+                      Minicarta <span className="memoryOptional">(opcional)</span>
+                    </label>
+                    <textarea
+                      id="memory-description"
+                      value={description}
+                      onChange={(event) => setDescription(event.target.value)}
+                      placeholder="Escribe algo sobre este momento..."
+                      maxLength={4000}
+                      rows={4}
+                      style={styles.textarea}
+                      disabled={uploading}
+                    />
+                  </div>
+                </details>
+
+                {formError && (
+                  <div className="memoryFormError" role="alert">
+                    {formError}
+                  </div>
+                )}
+
+                <div className="memoryFormActions">
+                  <button
+                    type="button"
+                    style={styles.ghostBtn}
+                    onClick={closeMemoryForm}
+                    disabled={uploading}
+                  >
+                    Cancelar
+                  </button>
+                  <button type="submit" style={styles.primaryBtnSmall} disabled={uploading}>
+                    {uploading ? (
+                      <LoaderCircle
+                        aria-hidden="true"
+                        className="syncSpinner"
+                        size={16}
+                        strokeWidth={1.8}
+                      />
+                    ) : (
+                      <Upload aria-hidden="true" size={16} strokeWidth={1.8} />
+                    )}
+                    {uploading ? "Preparando y subiendo..." : "Guardar foto"}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </section>
+        </div>
       )}
 
       {selectedMemory && (
@@ -609,7 +672,13 @@ export default function Memories() {
 
             <div className="memoryModalImage">
               {selectedMemory.imageUrl ? (
-                <img src={selectedMemory.imageUrl} alt={selectedMemory.title} />
+                <img
+                  src={selectedMemory.imageUrl}
+                  alt={
+                    selectedMemory.title ||
+                    `Fotografía del ${formatCalendarDate(selectedMemory.memoryDate)}`
+                  }
+                />
               ) : (
                 <ImagePlus aria-hidden="true" size={36} strokeWidth={1.4} />
               )}
@@ -620,12 +689,14 @@ export default function Memories() {
                 <CalendarDays aria-hidden="true" size={14} strokeWidth={1.8} />
                 {formatCalendarDate(selectedMemory.memoryDate)}
               </div>
-              <h2 id="memory-modal-title">{selectedMemory.title}</h2>
-              {selectedMemory.description ? (
-                <p>{selectedMemory.description}</p>
-              ) : (
-                <p className="memoryModalEmptyText">Este recuerdo todavía no tiene minicarta.</p>
-              )}
+              <h2
+                id="memory-modal-title"
+                className={selectedMemory.title ? undefined : "srOnly"}
+              >
+                {selectedMemory.title ||
+                  `Fotografía del ${formatCalendarDate(selectedMemory.memoryDate)}`}
+              </h2>
+              {selectedMemory.description && <p>{selectedMemory.description}</p>}
 
               <button
                 type="button"
@@ -644,7 +715,7 @@ export default function Memories() {
                 ) : (
                   <Trash2 aria-hidden="true" size={15} strokeWidth={1.8} />
                 )}
-                {deleting ? "Eliminando..." : "Eliminar recuerdo"}
+                {deleting ? "Eliminando..." : "Eliminar fotografía"}
               </button>
             </div>
           </section>
