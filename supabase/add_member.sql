@@ -3,7 +3,7 @@
 
 do $$
 declare
-  owner_email text := 'OWNER_EMAIL_HERE';
+  owner_email text := 'bernaljesusangel@gmail.com';
   member_email text := 'MEMBER_EMAIL_HERE';
   owner_user_id uuid;
   member_user_id uuid;

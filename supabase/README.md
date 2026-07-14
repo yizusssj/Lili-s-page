@@ -34,6 +34,20 @@ Después sigue este orden:
 
 `owner` y `member` siguen siendo usuarios normales de Supabase con el rol técnico `authenticated`. El rol `owner` solo permite administrar miembros dentro de Lili's Workspace; nunca utiliza `service_role` ni una clave secreta en el navegador.
 
+## Usar cuentas completamente separadas
+
+Si cada cuenta debe tener sus propias tareas, notas, prioridades y recuerdos, no ejecutes `add_member.sql`.
+
+Después de crear la nueva cuenta en `Authentication > Users`, ejecuta `bootstrap_private_workspace.sql` reemplazando `USER_EMAIL_HERE` por su correo. El script:
+
+- crea o reutiliza un workspace propiedad de esa cuenta;
+- la registra como `owner` de su espacio personal;
+- elimina su membresía de workspaces pertenecientes a otras cuentas;
+- crea tres prioridades y una nota rápida vacías;
+- evita importar datos locales pertenecientes a otra sesión durante el primer inicio.
+
+Al iniciar sesión, cada cuenta verá únicamente el contenido de su propio workspace.
+
 ## Activar el guardado compartido en la aplicación
 
 Después de crear el workspace y su owner, ejecuta una sola vez `migrations/20260712234000_initialize_shared_data.sql`.
