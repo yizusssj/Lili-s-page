@@ -256,6 +256,52 @@ export async function updateAlbumCover(
   return mapAlbum(data);
 }
 
+export async function updateAlbum(client, workspaceId, albumId, fields) {
+  const { data, error } = await client
+    .from("memory_albums")
+    .update(fields)
+    .eq("workspace_id", workspaceId)
+    .eq("id", albumId)
+    .select("id, title, description, cover_memory_id, created_at, updated_at")
+    .single();
+
+  throwIfError(error, "No se pudo actualizar el álbum.");
+  return mapAlbum(data);
+}
+
+export async function deleteAlbum(
+  client,
+  workspaceId,
+  albumId,
+  storagePaths,
+) {
+  const rpcArguments = {
+    target_album_id: albumId,
+    target_workspace_id: workspaceId,
+  };
+  const verification = await client.rpc("delete_memory_album", {
+    ...rpcArguments,
+    verify_only: true,
+  });
+  throwIfError(
+    verification.error,
+    "No se pudo verificar la eliminación del álbum.",
+  );
+
+  for (let index = 0; index < storagePaths.length; index += 100) {
+    const paths = storagePaths.slice(index, index + 100);
+    const { error } = await client.storage.from(MEMORY_BUCKET).remove(paths);
+    throwIfError(error, "No se pudieron eliminar las fotografías privadas.");
+  }
+
+  const { error } = await client.rpc("delete_memory_album", {
+    ...rpcArguments,
+    verify_only: false,
+  });
+
+  throwIfError(error, "No se pudo eliminar el álbum.");
+}
+
 export async function insertMemory(
   client,
   workspaceId,

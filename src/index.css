@@ -239,6 +239,25 @@ input[type="checkbox"] {
   gap: 8px;
 }
 
+.memoryIconAction {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: inline-grid;
+  flex: 0 0 36px;
+  border: 1px solid var(--control-border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.48);
+  color: var(--text-primary);
+  place-items: center;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.66);
+}
+
+.memoryIconAction:hover {
+  color: var(--accent-dark);
+  background: rgba(233, 250, 255, 0.72);
+}
+
 .memoryOptional {
   color: var(--text-muted);
   font-weight: 500;
@@ -462,6 +481,59 @@ input[type="checkbox"] {
   box-shadow: 0 32px 90px rgba(22, 18, 28, 0.3);
   -webkit-backdrop-filter: blur(28px) saturate(130%);
   backdrop-filter: blur(28px) saturate(130%);
+}
+
+.albumEditor {
+  width: min(520px, 100%);
+  max-height: calc(100dvh - 44px);
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.76);
+  border-radius: 26px;
+  background: rgba(250, 248, 252, 0.92);
+  box-shadow: 0 32px 90px rgba(22, 18, 28, 0.3);
+  -webkit-backdrop-filter: blur(28px) saturate(130%);
+  backdrop-filter: blur(28px) saturate(130%);
+}
+
+.albumEditorForm {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.albumDangerZone {
+  margin-top: 12px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid rgba(185, 28, 28, 0.15);
+  border-radius: 16px;
+  background: rgba(254, 242, 242, 0.48);
+}
+
+.albumDangerZone > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.albumDangerZone strong {
+  color: #8f2531;
+  font-size: 12px;
+}
+
+.albumDangerZone span {
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.albumDangerZone button {
+  flex: 0 0 auto;
 }
 
 .memoryComposerHeader {
@@ -1273,6 +1345,7 @@ a[data-pin-do] {
   .memoryFileName,
   .albumCardCount,
   .memoryComposer,
+  .albumEditor,
   .memoryComposerBackdrop,
   .memoryComposerHeader,
   .memoryModalBackdrop,
@@ -1506,6 +1579,14 @@ a[data-pin-do] {
     flex: 1;
   }
 
+  .memoryHeaderActions .memoryIconAction {
+    flex: 0 0 36px;
+  }
+
+  .memoryBackLabel {
+    display: none;
+  }
+
   .albumIdeas {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1550,6 +1631,28 @@ a[data-pin-do] {
     border-bottom: 0;
     border-left: 0;
     border-radius: 24px 24px 0 0;
+  }
+
+  .albumEditor {
+    width: 100%;
+    max-height: calc(100dvh - max(12px, env(safe-area-inset-top)));
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: 24px 24px 0 0;
+  }
+
+  .albumEditorForm {
+    padding: 16px 16px calc(18px + env(safe-area-inset-bottom));
+  }
+
+  .albumDangerZone {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .albumDangerZone button {
+    width: 100%;
   }
 
   .memoryComposerHeader {

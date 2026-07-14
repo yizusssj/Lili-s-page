@@ -68,4 +68,6 @@ Por último ejecuta `migrations/20260713013000_optional_memory_details.sql`. As�
 
 Ejecuta también `migrations/20260713020000_album_custom_covers.sql` para activar las portadas personalizadas opcionales. Si un álbum no tiene una portada fijada, la aplicación mostrará automáticamente su fotografía añadida más reciente.
 
+Ejecuta `migrations/20260713023000_album_management.sql` para activar la eliminación transaccional de álbumes. La aplicación elimina primero los archivos privados del bucket y después borra en una sola operación los recuerdos y el álbum.
+
 Finalmente vuelve a correr `verify_shared_workspace.sql`. Deben aparecer ocho tablas públicas con RLS, treinta y dos políticas públicas, el bucket privado y tres políticas sobre `storage.objects`.

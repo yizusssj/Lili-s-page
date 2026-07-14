@@ -76,4 +76,40 @@ describe("Recuerdos", () => {
     expect(await screen.findByRole("dialog", { name: /Fotografía del/ }))
       .toBeInTheDocument();
   });
+
+  it("edita y elimina un álbum con confirmación", async () => {
+    const user = userEvent.setup();
+    renderWithWorkspace(<Memories />, {
+      albums: [
+        {
+          id: "album-viajes",
+          title: "Viajes",
+          description: "Lugares visitados.",
+          coverMemoryId: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ],
+    });
+
+    await user.click(screen.getByRole("button", { name: "Abrir álbum Viajes" }));
+    await user.click(screen.getByRole("button", { name: "Editar álbum" }));
+    const titleInput = screen.getByRole("textbox", { name: "Nombre del álbum" });
+    await user.clear(titleInput);
+    await user.type(titleInput, "Viajes favoritos");
+    await user.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+    expect(await screen.findByRole("heading", { name: "Viajes favoritos" }))
+      .toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Editar álbum" }));
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    await user.click(screen.getByRole("button", { name: "Eliminar álbum" }));
+
+    expect(confirm).toHaveBeenCalledWith(
+      expect.stringContaining("Viajes favoritos"),
+    );
+    expect(await screen.findByText("Tu historia puede empezar donde quieras"))
+      .toBeInTheDocument();
+  });
 });

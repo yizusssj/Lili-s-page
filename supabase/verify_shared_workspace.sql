@@ -51,11 +51,12 @@ where table_schema = 'public'
   and table_name = 'workspaces'
   and column_name = 'data_initialized_at';
 
--- Resultado esperado: 5 funciones con security_type = INVOKER.
+-- Resultado esperado: 6 funciones con security_type = INVOKER.
 select routine_name, security_type
 from information_schema.routines
 where routine_schema = 'public'
   and routine_name in (
+    'delete_memory_album',
     'ensure_album_cover_memory',
     'initialize_workspace_data',
     'ensure_memory_album_workspace',

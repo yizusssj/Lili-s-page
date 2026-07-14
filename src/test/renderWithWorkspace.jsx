@@ -147,6 +147,13 @@ function WorkspaceHarness({ children, initialData }) {
       );
       return true;
     },
+    removeAlbum: async (albumId) => {
+      setMemories((current) =>
+        current.filter((memory) => memory.albumId !== albumId),
+      );
+      setAlbums((current) => current.filter((album) => album.id !== albumId));
+      return true;
+    },
     removeTask,
     resetPriorities: () =>
       changePriorities((current) =>
@@ -179,6 +186,14 @@ function WorkspaceHarness({ children, initialData }) {
       ),
     toggleTask,
     updateNoteDraft,
+    updateAlbum: async (albumId, fields) => {
+      const previous = albums.find((album) => album.id === albumId);
+      const updated = { ...previous, ...fields, updatedAt: new Date().toISOString() };
+      setAlbums((current) =>
+        current.map((album) => (album.id === albumId ? updated : album)),
+      );
+      return { data: updated, error: null };
+    },
     updatePriorityText: (priorityId, text) =>
       changePriorities((current) =>
         current.map((priority) =>

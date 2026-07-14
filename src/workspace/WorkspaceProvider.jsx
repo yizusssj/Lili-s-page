@@ -7,6 +7,7 @@ import { prepareMemoryImage } from "../utils/images.js";
 import { writeJSON, writeText } from "../utils/storage.js";
 import { WorkspaceContext } from "./workspaceContext.js";
 import {
+  deleteAlbum as deleteAlbumRemote,
   deleteCompletedTasks as deleteCompletedTasksRemote,
   deleteMemory as deleteMemoryRemote,
   deleteNote as deleteNoteRemote,
@@ -20,6 +21,7 @@ import {
   insertTask,
   savePriorities as savePrioritiesRemote,
   updateAlbumCover as updateAlbumCoverRemote,
+  updateAlbum as updateAlbumRemote,
   updateNote as updateNoteRemote,
   updateQuickNote,
   updateTask as updateTaskRemote,
@@ -535,6 +537,65 @@ export default function WorkspaceProvider({ children }) {
     [commitAlbums, performWrite],
   );
 
+  const updateAlbum = useCallback(
+    async (albumId, { description, title }) => {
+      const currentWorkspace = workspaceRef.current;
+      const album = albumsRef.current.find((item) => item.id === albumId);
+      const normalizedTitle = title.trim().slice(0, 80);
+      if (!currentWorkspace || !album || !normalizedTitle) {
+        return { data: null, error: new Error("Escribe un nombre para el álbum.") };
+      }
+
+      const result = await performWrite(
+        () =>
+          updateAlbumRemote(supabase, currentWorkspace.id, albumId, {
+            description: description.trim().slice(0, 500),
+            title: normalizedTitle,
+          }),
+        "No se pudo actualizar el álbum.",
+      );
+
+      if (result.error) return result;
+      commitAlbums(
+        albumsRef.current.map((item) =>
+          item.id === albumId ? result.data : item,
+        ),
+      );
+      return result;
+    },
+    [commitAlbums, performWrite],
+  );
+
+  const removeAlbum = useCallback(
+    async (albumId) => {
+      const currentWorkspace = workspaceRef.current;
+      const album = albumsRef.current.find((item) => item.id === albumId);
+      if (!currentWorkspace || !album) return false;
+
+      const albumMemories = memoriesRef.current.filter(
+        (memory) => memory.albumId === albumId,
+      );
+      const result = await performWrite(
+        () =>
+          deleteAlbumRemote(
+            supabase,
+            currentWorkspace.id,
+            albumId,
+            albumMemories.map((memory) => memory.storagePath),
+          ),
+        "No se pudo eliminar el álbum.",
+      );
+
+      if (result.error) return false;
+      commitMemories(
+        memoriesRef.current.filter((memory) => memory.albumId !== albumId),
+      );
+      commitAlbums(albumsRef.current.filter((item) => item.id !== albumId));
+      return true;
+    },
+    [commitAlbums, commitMemories, performWrite],
+  );
+
   const flushNoteUpdate = useCallback(
     async (noteId) => {
       const currentWorkspace = workspaceRef.current;
@@ -768,6 +829,7 @@ export default function WorkspaceProvider({ children }) {
     retryInitialization: loadWorkspace,
     removeNote,
     removeMemory,
+    removeAlbum,
     removeTask,
     resetPriorities,
     saveQuickNote,
@@ -778,6 +840,7 @@ export default function WorkspaceProvider({ children }) {
     togglePriority,
     toggleTask,
     updateNoteDraft,
+    updateAlbum,
     updatePriorityText,
     workspace,
   };

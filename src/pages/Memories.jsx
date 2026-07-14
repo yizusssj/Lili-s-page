@@ -8,6 +8,7 @@ import {
   ImagePlus,
   Images,
   LoaderCircle,
+  Pencil,
   Plane,
   Plus,
   Sparkles,
@@ -37,8 +38,10 @@ export default function Memories() {
     addMemory,
     albums,
     memories,
+    removeAlbum,
     removeMemory,
     setAlbumCover,
+    updateAlbum,
   } = useWorkspace();
   const [selectedAlbumId, setSelectedAlbumId] = useState(null);
   const [albumFormOpen, setAlbumFormOpen] = useState(false);
@@ -46,6 +49,12 @@ export default function Memories() {
   const [albumDescription, setAlbumDescription] = useState("");
   const [albumError, setAlbumError] = useState("");
   const [creatingAlbum, setCreatingAlbum] = useState(false);
+  const [albumEditorOpen, setAlbumEditorOpen] = useState(false);
+  const [editedAlbumTitle, setEditedAlbumTitle] = useState("");
+  const [editedAlbumDescription, setEditedAlbumDescription] = useState("");
+  const [albumEditorError, setAlbumEditorError] = useState("");
+  const [savingAlbum, setSavingAlbum] = useState(false);
+  const [deletingAlbum, setDeletingAlbum] = useState(false);
   const [memoryFormOpen, setMemoryFormOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -58,6 +67,7 @@ export default function Memories() {
   const [selectedMemoryId, setSelectedMemoryId] = useState(null);
   const closeButtonRef = useRef(null);
   const composerCloseRef = useRef(null);
+  const albumEditorCloseRef = useRef(null);
 
   const selectedAlbum = albums.find((album) => album.id === selectedAlbumId) ?? null;
   const selectedMemory =
@@ -146,6 +156,32 @@ export default function Memories() {
     return () => window.clearTimeout(focusTimer);
   }, [memoryFormOpen]);
 
+  useEffect(() => {
+    if (!albumEditorOpen) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape" && !savingAlbum && !deletingAlbum) {
+        setAlbumEditorOpen(false);
+        setAlbumEditorError("");
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [albumEditorOpen, deletingAlbum, savingAlbum]);
+
+  useEffect(() => {
+    if (!albumEditorOpen) return undefined;
+    const focusTimer = window.setTimeout(() => albumEditorCloseRef.current?.focus(), 0);
+    return () => window.clearTimeout(focusTimer);
+  }, [albumEditorOpen]);
+
   function resetAlbumForm() {
     setAlbumTitle("");
     setAlbumDescription("");
@@ -185,6 +221,74 @@ export default function Memories() {
     resetAlbumForm();
     setAlbumFormOpen(false);
     setSelectedAlbumId(result.data.id);
+  }
+
+  function openAlbumEditor() {
+    if (!selectedAlbum) return;
+    setEditedAlbumTitle(selectedAlbum.title);
+    setEditedAlbumDescription(selectedAlbum.description);
+    setAlbumEditorError("");
+    setAlbumEditorOpen(true);
+  }
+
+  function closeAlbumEditor() {
+    if (savingAlbum || deletingAlbum) return;
+    setAlbumEditorOpen(false);
+    setAlbumEditorError("");
+  }
+
+  async function submitAlbumChanges(event) {
+    event.preventDefault();
+    if (!selectedAlbum || !editedAlbumTitle.trim()) {
+      setAlbumEditorError("Escribe un nombre para el álbum.");
+      return;
+    }
+
+    setSavingAlbum(true);
+    setAlbumEditorError("");
+    const result = await updateAlbum(selectedAlbum.id, {
+      description: editedAlbumDescription,
+      title: editedAlbumTitle,
+    });
+    setSavingAlbum(false);
+
+    if (result.error) {
+      setAlbumEditorError(
+        result.error.code === "23505"
+          ? "Ya existe otro álbum con ese nombre."
+          : result.error.message || "No se pudo actualizar el álbum.",
+      );
+      return;
+    }
+
+    setAlbumEditorOpen(false);
+  }
+
+  async function deleteSelectedAlbum() {
+    if (!selectedAlbum || deletingAlbum) return;
+    const photoText =
+      albumMemories.length === 0
+        ? "El álbum está vacío."
+        : albumMemories.length === 1
+          ? "También se eliminará su fotografía."
+          : `También se eliminarán sus ${albumMemories.length} fotografías.`;
+    const confirmed = window.confirm(
+      `¿Eliminar el álbum “${selectedAlbum.title}”? ${photoText} Esta acción no se puede deshacer.`,
+    );
+    if (!confirmed) return;
+
+    setDeletingAlbum(true);
+    setAlbumEditorError("");
+    const removed = await removeAlbum(selectedAlbum.id);
+    setDeletingAlbum(false);
+
+    if (!removed) {
+      setAlbumEditorError("No se pudo eliminar el álbum. Inténtalo nuevamente.");
+      return;
+    }
+
+    setAlbumEditorOpen(false);
+    setSelectedAlbumId(null);
   }
 
   function resetMemoryForm() {
@@ -464,9 +568,22 @@ export default function Memories() {
           }
           right={
             <div className="memoryHeaderActions">
-              <button type="button" style={styles.ghostBtn} onClick={leaveAlbum}>
+              <button
+                type="button"
+                style={styles.ghostBtn}
+                onClick={leaveAlbum}
+                aria-label="Volver a álbumes"
+              >
                 <ArrowLeft aria-hidden="true" size={16} strokeWidth={1.9} />
-                Álbumes
+                <span className="memoryBackLabel">Álbumes</span>
+              </button>
+              <button
+                type="button"
+                className="memoryIconAction"
+                onClick={openAlbumEditor}
+                aria-label="Editar álbum"
+              >
+                <Pencil aria-hidden="true" size={16} strokeWidth={1.8} />
               </button>
               <button
                 type="button"
@@ -535,6 +652,138 @@ export default function Memories() {
             </div>
           )}
         </Block>
+      )}
+
+      {selectedAlbum && albumEditorOpen && (
+        <div
+          className="memoryComposerBackdrop"
+          onMouseDown={(event) => {
+            if (
+              event.target === event.currentTarget &&
+              !savingAlbum &&
+              !deletingAlbum
+            ) {
+              closeAlbumEditor();
+            }
+          }}
+        >
+          <section
+            className="albumEditor"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="album-editor-title"
+          >
+            <header className="memoryComposerHeader">
+              <div>
+                <h2 id="album-editor-title">Editar álbum</h2>
+                <p>Actualiza sus detalles o elimina la colección.</p>
+              </div>
+              <button
+                ref={albumEditorCloseRef}
+                type="button"
+                className="memoryModalClose memoryComposerClose"
+                onClick={closeAlbumEditor}
+                aria-label="Cerrar editor del álbum"
+                disabled={savingAlbum || deletingAlbum}
+              >
+                <X aria-hidden="true" size={19} strokeWidth={1.8} />
+              </button>
+            </header>
+
+            <form
+              className="albumEditorForm"
+              onSubmit={(event) => void submitAlbumChanges(event)}
+            >
+              <label htmlFor="edit-album-title" style={styles.fieldLabel}>
+                Nombre del álbum
+              </label>
+              <input
+                id="edit-album-title"
+                value={editedAlbumTitle}
+                onChange={(event) => setEditedAlbumTitle(event.target.value)}
+                maxLength={80}
+                style={styles.input}
+                disabled={savingAlbum || deletingAlbum}
+              />
+
+              <label htmlFor="edit-album-description" style={styles.fieldLabel}>
+                Descripción <span className="memoryOptional">(opcional)</span>
+              </label>
+              <textarea
+                id="edit-album-description"
+                value={editedAlbumDescription}
+                onChange={(event) => setEditedAlbumDescription(event.target.value)}
+                maxLength={500}
+                rows={4}
+                style={styles.textarea}
+                disabled={savingAlbum || deletingAlbum}
+              />
+
+              {albumEditorError && (
+                <div className="memoryFormError" role="alert">
+                  {albumEditorError}
+                </div>
+              )}
+
+              <div className="memoryFormActions">
+                <button
+                  type="button"
+                  style={styles.ghostBtn}
+                  onClick={closeAlbumEditor}
+                  disabled={savingAlbum || deletingAlbum}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  style={styles.primaryBtnSmall}
+                  disabled={savingAlbum || deletingAlbum}
+                >
+                  {savingAlbum && (
+                    <LoaderCircle
+                      aria-hidden="true"
+                      className="syncSpinner"
+                      size={16}
+                      strokeWidth={1.8}
+                    />
+                  )}
+                  {savingAlbum ? "Guardando..." : "Guardar cambios"}
+                </button>
+              </div>
+
+              <div className="albumDangerZone">
+                <div>
+                  <strong>Eliminar álbum</strong>
+                  <span>
+                    {albumMemories.length === 0
+                      ? "El álbum está vacío."
+                      : albumMemories.length === 1
+                        ? "También se eliminará 1 fotografía."
+                        : `También se eliminarán ${albumMemories.length} fotografías.`}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  style={styles.dangerBtn}
+                  onClick={() => void deleteSelectedAlbum()}
+                  disabled={savingAlbum || deletingAlbum}
+                >
+                  {deletingAlbum ? (
+                    <LoaderCircle
+                      aria-hidden="true"
+                      className="syncSpinner"
+                      size={15}
+                      strokeWidth={1.8}
+                    />
+                  ) : (
+                    <Trash2 aria-hidden="true" size={15} strokeWidth={1.8} />
+                  )}
+                  {deletingAlbum ? "Eliminando..." : "Eliminar álbum"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
       )}
 
       {selectedAlbum && memoryFormOpen && (
