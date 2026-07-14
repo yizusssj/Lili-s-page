@@ -35,6 +35,10 @@ describe("Recuerdos", () => {
     const dialog = await screen.findByRole("dialog", { name: "Nuestro paseo" });
     expect(dialog).toHaveTextContent("Un momento que siempre quiero recordar.");
 
+    await user.click(screen.getByRole("button", { name: "Usar como portada" }));
+    expect(await screen.findByRole("button", { name: "Usar portada automática" }))
+      .toBeInTheDocument();
+
     await user.click(screen.getByRole("button", { name: "Cerrar recuerdo" }));
     expect(screen.getByRole("button", { name: "Abrir recuerdo Nuestro paseo" }))
       .toBeInTheDocument();

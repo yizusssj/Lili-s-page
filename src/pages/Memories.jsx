@@ -32,7 +32,14 @@ const ALBUM_IDEAS = [
 ];
 
 export default function Memories() {
-  const { addAlbum, addMemory, albums, memories, removeMemory } = useWorkspace();
+  const {
+    addAlbum,
+    addMemory,
+    albums,
+    memories,
+    removeMemory,
+    setAlbumCover,
+  } = useWorkspace();
   const [selectedAlbumId, setSelectedAlbumId] = useState(null);
   const [albumFormOpen, setAlbumFormOpen] = useState(false);
   const [albumTitle, setAlbumTitle] = useState("");
@@ -47,6 +54,7 @@ export default function Memories() {
   const [formError, setFormError] = useState("");
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [changingCover, setChangingCover] = useState(false);
   const [selectedMemoryId, setSelectedMemoryId] = useState(null);
   const closeButtonRef = useRef(null);
   const composerCloseRef = useRef(null);
@@ -62,7 +70,21 @@ export default function Memories() {
     () =>
       albums.map((album) => {
         const photos = memories.filter((memory) => memory.albumId === album.id);
-        return { ...album, cover: photos[0] ?? null, photoCount: photos.length };
+        const automaticCover = photos.reduce(
+          (latest, photo) =>
+            !latest || (photo.createdAt ?? "") > (latest.createdAt ?? "")
+              ? photo
+              : latest,
+          null,
+        );
+        const selectedCover = album.coverMemoryId
+          ? photos.find((photo) => photo.id === album.coverMemoryId)
+          : null;
+        return {
+          ...album,
+          cover: selectedCover ?? automaticCover,
+          photoCount: photos.length,
+        };
       }),
     [albums, memories],
   );
@@ -249,6 +271,16 @@ export default function Memories() {
     const removed = await removeMemory(selectedMemory.id);
     setDeleting(false);
     if (removed) setSelectedMemoryId(null);
+  }
+
+  async function toggleSelectedCover() {
+    if (!selectedAlbum || !selectedMemory || changingCover) return;
+    const nextCoverId =
+      selectedAlbum.coverMemoryId === selectedMemory.id ? null : selectedMemory.id;
+
+    setChangingCover(true);
+    await setAlbumCover(selectedAlbum.id, nextCoverId);
+    setChangingCover(false);
   }
 
   return (
@@ -665,7 +697,7 @@ export default function Memories() {
               className="memoryModalClose"
               onClick={() => setSelectedMemoryId(null)}
               aria-label="Cerrar recuerdo"
-              disabled={deleting}
+              disabled={deleting || changingCover}
             >
               <X aria-hidden="true" size={19} strokeWidth={1.8} />
             </button>
@@ -698,25 +730,51 @@ export default function Memories() {
               </h2>
               {selectedMemory.description && <p>{selectedMemory.description}</p>}
 
-              <button
-                type="button"
-                style={styles.dangerBtn}
-                className="memoryDeleteButton"
-                onClick={() => void deleteSelectedMemory()}
-                disabled={deleting}
-              >
-                {deleting ? (
-                  <LoaderCircle
-                    aria-hidden="true"
-                    className="syncSpinner"
-                    size={15}
-                    strokeWidth={1.8}
-                  />
-                ) : (
-                  <Trash2 aria-hidden="true" size={15} strokeWidth={1.8} />
-                )}
-                {deleting ? "Eliminando..." : "Eliminar fotografía"}
-              </button>
+              <div className="memoryModalActions">
+                <button
+                  type="button"
+                  style={styles.ghostBtn}
+                  className="memoryCoverButton"
+                  onClick={() => void toggleSelectedCover()}
+                  disabled={changingCover || deleting}
+                >
+                  {changingCover ? (
+                    <LoaderCircle
+                      aria-hidden="true"
+                      className="syncSpinner"
+                      size={15}
+                      strokeWidth={1.8}
+                    />
+                  ) : (
+                    <Images aria-hidden="true" size={15} strokeWidth={1.8} />
+                  )}
+                  {changingCover
+                    ? "Cambiando..."
+                    : selectedAlbum?.coverMemoryId === selectedMemory.id
+                      ? "Usar portada automática"
+                      : "Usar como portada"}
+                </button>
+
+                <button
+                  type="button"
+                  style={styles.dangerBtn}
+                  className="memoryDeleteButton"
+                  onClick={() => void deleteSelectedMemory()}
+                  disabled={deleting || changingCover}
+                >
+                  {deleting ? (
+                    <LoaderCircle
+                      aria-hidden="true"
+                      className="syncSpinner"
+                      size={15}
+                      strokeWidth={1.8}
+                    />
+                  ) : (
+                    <Trash2 aria-hidden="true" size={15} strokeWidth={1.8} />
+                  )}
+                  {deleting ? "Eliminando..." : "Eliminar fotografía"}
+                </button>
+              </div>
             </div>
           </section>
         </div>

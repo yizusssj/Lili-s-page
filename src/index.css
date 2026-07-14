@@ -359,7 +359,7 @@ input[type="checkbox"] {
   position: relative;
   display: grid;
   overflow: hidden;
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 1 / 1;
   place-items: center;
   background:
     radial-gradient(circle at 25% 20%, rgba(159, 228, 245, 0.72), transparent 46%),
@@ -828,8 +828,17 @@ input[type="checkbox"] {
   font-style: italic;
 }
 
-.memoryDeleteButton {
+.memoryModalActions {
+  width: 100%;
   margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.memoryCoverButton,
+.memoryDeleteButton {
+  width: 100%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1580,6 +1589,9 @@ a[data-pin-do] {
 
   .memoryDeleteButton {
     width: 100%;
+  }
+
+  .memoryModalActions {
     margin-top: 22px;
   }
 }

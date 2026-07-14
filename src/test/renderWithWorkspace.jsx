@@ -83,6 +83,7 @@ function WorkspaceHarness({ children, initialData }) {
         id: crypto.randomUUID(),
         title,
         description,
+        coverMemoryId: null,
         createdAt: now,
         updatedAt: now,
       };
@@ -137,6 +138,13 @@ function WorkspaceHarness({ children, initialData }) {
     },
     removeMemory: async (memoryId) => {
       setMemories((current) => current.filter((memory) => memory.id !== memoryId));
+      setAlbums((current) =>
+        current.map((album) =>
+          album.coverMemoryId === memoryId
+            ? { ...album, coverMemoryId: null }
+            : album,
+        ),
+      );
       return true;
     },
     removeTask,
@@ -151,6 +159,14 @@ function WorkspaceHarness({ children, initialData }) {
       return true;
     },
     saving: false,
+    setAlbumCover: async (albumId, memoryId) => {
+      setAlbums((current) =>
+        current.map((album) =>
+          album.id === albumId ? { ...album, coverMemoryId: memoryId } : album,
+        ),
+      );
+      return true;
+    },
     syncError: null,
     tasks,
     togglePriority: (priorityId) =>

@@ -19,6 +19,7 @@ import {
   insertNote,
   insertTask,
   savePriorities as savePrioritiesRemote,
+  updateAlbumCover as updateAlbumCoverRemote,
   updateNote as updateNoteRemote,
   updateQuickNote,
   updateTask as updateTaskRemote,
@@ -480,9 +481,58 @@ export default function WorkspaceProvider({ children }) {
 
       if (result.error) return false;
       commitMemories(memoriesRef.current.filter((item) => item.id !== memoryId));
+      if (
+        albumsRef.current.some((album) => album.coverMemoryId === memoryId)
+      ) {
+        commitAlbums(
+          albumsRef.current.map((album) =>
+            album.coverMemoryId === memoryId
+              ? { ...album, coverMemoryId: null }
+              : album,
+          ),
+        );
+      }
       return true;
     },
-    [commitMemories, performWrite],
+    [commitAlbums, commitMemories, performWrite],
+  );
+
+  const setAlbumCover = useCallback(
+    async (albumId, memoryId) => {
+      const currentWorkspace = workspaceRef.current;
+      const album = albumsRef.current.find((item) => item.id === albumId);
+      const memory = memoryId
+        ? memoriesRef.current.find((item) => item.id === memoryId)
+        : null;
+
+      if (
+        !currentWorkspace ||
+        !album ||
+        (memoryId && (!memory || memory.albumId !== albumId))
+      ) {
+        return false;
+      }
+
+      const result = await performWrite(
+        () =>
+          updateAlbumCoverRemote(
+            supabase,
+            currentWorkspace.id,
+            albumId,
+            memoryId,
+          ),
+        "No se pudo cambiar la portada del álbum.",
+      );
+
+      if (result.error) return false;
+      commitAlbums(
+        albumsRef.current.map((item) =>
+          item.id === albumId ? result.data : item,
+        ),
+      );
+      return true;
+    },
+    [commitAlbums, performWrite],
   );
 
   const flushNoteUpdate = useCallback(
@@ -722,6 +772,7 @@ export default function WorkspaceProvider({ children }) {
     resetPriorities,
     saveQuickNote,
     saving: pendingWrites > 0 || bufferedWrites > 0,
+    setAlbumCover,
     syncError,
     tasks,
     togglePriority,

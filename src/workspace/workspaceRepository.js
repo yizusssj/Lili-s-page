@@ -40,6 +40,7 @@ function mapAlbum(row) {
     id: row.id,
     title: row.title,
     description: row.description,
+    coverMemoryId: row.cover_memory_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -184,7 +185,7 @@ export async function fetchWorkspaceData(
       .maybeSingle(),
     client
       .from("memory_albums")
-      .select("id, title, description, created_at, updated_at")
+      .select("id, title, description, cover_memory_id, created_at, updated_at")
       .eq("workspace_id", workspaceId)
       .order("created_at", { ascending: false }),
     client
@@ -230,10 +231,28 @@ export async function insertAlbum(client, workspaceId, userId, album) {
       title: album.title,
       workspace_id: workspaceId,
     })
-    .select("id, title, description, created_at, updated_at")
+    .select("id, title, description, cover_memory_id, created_at, updated_at")
     .single();
 
   throwIfError(error, "No se pudo crear el álbum.");
+  return mapAlbum(data);
+}
+
+export async function updateAlbumCover(
+  client,
+  workspaceId,
+  albumId,
+  coverMemoryId,
+) {
+  const { data, error } = await client
+    .from("memory_albums")
+    .update({ cover_memory_id: coverMemoryId })
+    .eq("workspace_id", workspaceId)
+    .eq("id", albumId)
+    .select("id, title, description, cover_memory_id, created_at, updated_at")
+    .single();
+
+  throwIfError(error, "No se pudo cambiar la portada del álbum.");
   return mapAlbum(data);
 }
 

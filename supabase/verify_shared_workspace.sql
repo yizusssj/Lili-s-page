@@ -51,11 +51,12 @@ where table_schema = 'public'
   and table_name = 'workspaces'
   and column_name = 'data_initialized_at';
 
--- Resultado esperado: 4 funciones con security_type = INVOKER.
+-- Resultado esperado: 5 funciones con security_type = INVOKER.
 select routine_name, security_type
 from information_schema.routines
 where routine_schema = 'public'
   and routine_name in (
+    'ensure_album_cover_memory',
     'initialize_workspace_data',
     'ensure_memory_album_workspace',
     'memory_workspace_from_path',
@@ -74,6 +75,13 @@ from information_schema.columns
 where table_schema = 'public'
   and table_name = 'memories'
   and column_name = 'title';
+
+-- Después de 20260713020000_album_custom_covers.sql: is_nullable = YES.
+select table_name, column_name, is_nullable
+from information_schema.columns
+where table_schema = 'public'
+  and table_name = 'memory_albums'
+  and column_name = 'cover_memory_id';
 
 -- Después de 20260713004000_memories_gallery.sql: bucket privado y límite de 8 MB.
 select id, name, public, file_size_limit, allowed_mime_types

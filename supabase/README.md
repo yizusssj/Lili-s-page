@@ -66,4 +66,6 @@ Después ejecuta `migrations/20260713010000_memory_albums.sql`. Esta segunda mig
 
 Por último ejecuta `migrations/20260713013000_optional_memory_details.sql`. Así cada recuerdo puede guardarse solamente con fotografía y fecha; el título y la minicarta quedan opcionales.
 
+Ejecuta también `migrations/20260713020000_album_custom_covers.sql` para activar las portadas personalizadas opcionales. Si un álbum no tiene una portada fijada, la aplicación mostrará automáticamente su fotografía añadida más reciente.
+
 Finalmente vuelve a correr `verify_shared_workspace.sql`. Deben aparecer ocho tablas públicas con RLS, treinta y dos políticas públicas, el bucket privado y tres políticas sobre `storage.objects`.
