@@ -1,16 +1,34 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowDown,
+  ArrowRight,
   ArrowUp,
+  CalendarDays,
+  Camera,
   CircleCheckBig,
-  Flower2,
   GripVertical,
+  Images,
+  ListTodo,
+  NotebookPen,
+  Pin,
   Sun,
 } from "lucide-react";
 import { styles } from "../app/styles.jsx";
 import Block from "../components/Block.jsx";
 import SectionTitle from "../components/SectionTitle.jsx";
+import { formatCalendarDate, formatNoteDate } from "../utils/date.js";
 import { useWorkspace } from "../workspace/workspaceContext.js";
+
+function capitalize(value) {
+  return value.charAt(0).toLocaleUpperCase("es-MX") + value.slice(1);
+}
+
+function getGreeting(date) {
+  const hour = date.getHours();
+  if (hour < 12) return "Buenos días";
+  if (hour < 19) return "Buenas tardes";
+  return "Buenas noches";
+}
 
 function QuickNote() {
   const { quickNote, saveQuickNote } = useWorkspace();
@@ -74,25 +92,65 @@ function QuickNote() {
   );
 }
 
-export default function Today() {
+function DashboardMetric({ color, icon: Icon, label, onClick, value }) {
+  return (
+    <button
+      type="button"
+      className="dashboardMetric"
+      onClick={onClick}
+      aria-label={`${value} ${label}`}
+    >
+      <span className="dashboardMetricIcon" style={{ color }}>
+        <Icon aria-hidden="true" size={19} strokeWidth={1.8} />
+      </span>
+      <span className="dashboardMetricCopy">
+        <strong>{value}</strong>
+        <span>{label}</span>
+      </span>
+      <ArrowRight
+        aria-hidden="true"
+        className="dashboardMetricArrow"
+        size={16}
+        strokeWidth={1.8}
+      />
+    </button>
+  );
+}
+
+export default function Today({ onNavigate = () => {} }) {
   const {
+    albums,
+    memories,
     movePriority,
+    notes,
     priorities: items,
     resetPriorities,
+    tasks,
     togglePriority,
     updatePriorityText,
   } = useWorkspace();
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const clockId = window.setInterval(() => setNow(new Date()), 60000);
+    return () => window.clearInterval(clockId);
+  }, []);
 
   useEffect(() => {
     let timeoutId;
 
     function scheduleNextDay() {
-      const now = new Date();
-      const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-      const delay = nextMidnight.getTime() - now.getTime() + 100;
+      const currentDate = new Date();
+      const nextMidnight = new Date(
+        currentDate.getFullYear(),
+        currentDate.getMonth(),
+        currentDate.getDate() + 1,
+      );
+      const delay = nextMidnight.getTime() - currentDate.getTime() + 100;
 
       timeoutId = window.setTimeout(() => {
         resetPriorities();
+        setNow(new Date());
         scheduleNextDay();
       }, delay);
     }
@@ -101,15 +159,95 @@ export default function Today() {
     return () => window.clearTimeout(timeoutId);
   }, [resetPriorities]);
 
+  const pendingTasks = tasks.filter((task) => !task.done).length;
+  const completedPriorities = items.filter((item) => item.done).length;
+  const priorityProgress = items.length
+    ? Math.round((completedPriorities / items.length) * 100)
+    : 0;
+  const formattedDate = capitalize(
+    new Intl.DateTimeFormat("es-MX", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    }).format(now),
+  );
+
+  const featuredNote = useMemo(
+    () =>
+      [...notes].sort((first, second) => {
+        if (first.pinned !== second.pinned) return first.pinned ? -1 : 1;
+        return new Date(second.updatedAt).getTime() - new Date(first.updatedAt).getTime();
+      })[0] ?? null,
+    [notes],
+  );
+
+  const latestMemory = useMemo(
+    () =>
+      [...memories].sort((first, second) => {
+        const dateOrder = (second.memoryDate ?? "").localeCompare(first.memoryDate ?? "");
+        if (dateOrder !== 0) return dateOrder;
+        return new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime();
+      })[0] ?? null,
+    [memories],
+  );
+  const latestMemoryAlbum = latestMemory
+    ? albums.find((album) => album.id === latestMemory.albumId) ?? null
+    : null;
+
   return (
     <div style={styles.stack}>
       <Block title={<SectionTitle icon={Sun} label="Hoy" color="#b45309" />}>
-        <div style={styles.p}>
-          Bienvenida. Aquí vas a tener tu día clarito: prioridades, notas y cositas bonitas.
+        <div className="todayHero">
+          <div>
+            <div className="todayGreeting">{getGreeting(now)}</div>
+            <h1 className="todayHeading">Tu día, en un solo lugar.</h1>
+            <p className="todayIntro">
+              Revisa lo importante y continúa justo donde lo dejaste.
+            </p>
+
+            <div className="todayProgress" aria-label={`${priorityProgress}% de prioridades completadas`}>
+              <div className="todayProgressLabel">
+                <span>Prioridades de hoy</span>
+                <strong>{completedPriorities} de {items.length}</strong>
+              </div>
+              <div className="todayProgressTrack" aria-hidden="true">
+                <span style={{ width: `${priorityProgress}%` }} />
+              </div>
+            </div>
+          </div>
+
+          <div className="todayDate">
+            <CalendarDays aria-hidden="true" size={18} strokeWidth={1.8} />
+            <span>{formattedDate}</span>
+          </div>
         </div>
       </Block>
 
-      <div style={styles.grid2} className="grid2">
+      <div className="dashboardMetrics" aria-label="Resumen del workspace">
+        <DashboardMetric
+          color="#047857"
+          icon={ListTodo}
+          label={pendingTasks === 1 ? "tarea pendiente" : "tareas pendientes"}
+          onClick={() => onNavigate("tasks")}
+          value={pendingTasks}
+        />
+        <DashboardMetric
+          color="#1d4ed8"
+          icon={NotebookPen}
+          label={notes.length === 1 ? "nota guardada" : "notas guardadas"}
+          onClick={() => onNavigate("notes")}
+          value={notes.length}
+        />
+        <DashboardMetric
+          color="#7e22ce"
+          icon={Camera}
+          label={memories.length === 1 ? "recuerdo" : "recuerdos"}
+          onClick={() => onNavigate("memories")}
+          value={memories.length}
+        />
+      </div>
+
+      <div style={styles.grid2} className="grid2 todayWorkspaceGrid">
         <Block
           title="Top 3 prioridades"
           right={
@@ -197,7 +335,7 @@ export default function Today() {
           </div>
 
           <div style={{ marginTop: 10, fontSize: 12, color: "#6b7280" }}>
-            Tip: arrastra con los puntitos para reordenar.
+            Arrastra con los puntos para cambiar el orden.
           </div>
         </Block>
 
@@ -206,17 +344,95 @@ export default function Today() {
         </Block>
       </div>
 
-      <Block title="Frase del día">
-        <div style={styles.quote}>
-          <Flower2
-            aria-hidden="true"
-            size={17}
-            strokeWidth={1.7}
-            style={{ color: "#be123c", flexShrink: 0 }}
-          />
-          <span>“Un día a la vez, pero contigo todo se siente más ligero.”</span>
-        </div>
-      </Block>
+      <div className="dashboardPreviewGrid">
+        <Block
+          title="Nota destacada"
+          right={
+            <button type="button" style={styles.ghostBtn} onClick={() => onNavigate("notes")}>
+              Ver notas
+              <ArrowRight aria-hidden="true" size={14} strokeWidth={1.8} />
+            </button>
+          }
+        >
+          {featuredNote ? (
+            <button
+              type="button"
+              className="dashboardNotePreview"
+              onClick={() => onNavigate("notes")}
+            >
+              <span className="dashboardPreviewHeading">
+                <span className="dashboardPreviewIcon dashboardPreviewIconNote">
+                  {featuredNote.pinned ? (
+                    <Pin aria-hidden="true" size={17} strokeWidth={1.8} />
+                  ) : (
+                    <NotebookPen aria-hidden="true" size={17} strokeWidth={1.8} />
+                  )}
+                </span>
+                <span>
+                  <strong>{featuredNote.title.trim() || "Sin título"}</strong>
+                  <small>{formatNoteDate(featuredNote.updatedAt)}</small>
+                </span>
+              </span>
+              <span className="dashboardNoteExcerpt">
+                {featuredNote.content.trim() || "Esta nota todavía no tiene contenido."}
+              </span>
+            </button>
+          ) : (
+            <div className="dashboardEmpty">
+              <NotebookPen aria-hidden="true" size={22} strokeWidth={1.6} />
+              <div>
+                <strong>Aún no hay notas</strong>
+                <span>Cuando crees una, aparecerá aquí.</span>
+              </div>
+            </div>
+          )}
+        </Block>
+
+        <Block
+          title="Recuerdo reciente"
+          right={
+            <button type="button" style={styles.ghostBtn} onClick={() => onNavigate("memories")}>
+              Ver recuerdos
+              <ArrowRight aria-hidden="true" size={14} strokeWidth={1.8} />
+            </button>
+          }
+        >
+          {latestMemory ? (
+            <button
+              type="button"
+              className="dashboardMemoryPreview"
+              onClick={() => onNavigate("memories")}
+            >
+              <span className="dashboardMemoryImage">
+                {latestMemory.imageUrl ? (
+                  <img src={latestMemory.imageUrl} alt="" />
+                ) : (
+                  <Images aria-hidden="true" size={25} strokeWidth={1.5} />
+                )}
+              </span>
+              <span className="dashboardMemoryCopy">
+                {latestMemoryAlbum && <small>{latestMemoryAlbum.title}</small>}
+                <strong>{latestMemory.title?.trim() || "Un momento para recordar"}</strong>
+                <span>{formatCalendarDate(latestMemory.memoryDate)}</span>
+              </span>
+              <ArrowRight
+                aria-hidden="true"
+                className="dashboardMemoryArrow"
+                size={17}
+                strokeWidth={1.8}
+              />
+            </button>
+          ) : (
+            <div className="dashboardEmpty">
+              <Camera aria-hidden="true" size={22} strokeWidth={1.6} />
+              <div>
+                <strong>Aún no hay recuerdos</strong>
+                <span>Tu foto más reciente aparecerá aquí.</span>
+              </div>
+            </div>
+          )}
+        </Block>
+      </div>
     </div>
   );
 }

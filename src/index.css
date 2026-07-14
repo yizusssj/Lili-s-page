@@ -917,6 +917,321 @@ input[type="checkbox"] {
   gap: 6px;
 }
 
+.todayHero {
+  padding: 4px 2px 2px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 28px;
+}
+
+.todayGreeting {
+  margin-bottom: 5px;
+  color: var(--accent-dark);
+  font-size: 12px;
+  font-weight: 760;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.todayHeading {
+  margin: 0;
+  font-size: clamp(25px, 3.3vw, 38px);
+  font-weight: 790;
+  line-height: 1.08;
+  letter-spacing: -0.04em;
+}
+
+.todayIntro {
+  margin: 9px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.todayDate {
+  min-width: max-content;
+  padding: 10px 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--control-border);
+  border-radius: 14px;
+  color: var(--accent-text);
+  background: rgba(159, 228, 245, 0.28);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  font-size: 12px;
+  font-weight: 680;
+}
+
+.todayProgress {
+  width: min(100%, 430px);
+  margin-top: 19px;
+}
+
+.todayProgressLabel {
+  margin-bottom: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.todayProgressLabel strong {
+  color: var(--text-primary);
+  font-weight: 720;
+}
+
+.todayProgressTrack {
+  width: 100%;
+  height: 7px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  background: rgba(104, 93, 111, 0.12);
+  box-shadow: inset 0 1px 2px rgba(52, 40, 59, 0.08);
+}
+
+.todayProgressTrack span {
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #77d5ed, #9fe4f5);
+  box-shadow: 0 0 14px rgba(51, 160, 187, 0.32);
+  transition: width 260ms ease;
+}
+
+.dashboardMetrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.dashboardMetric {
+  min-width: 0;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  color: var(--text-primary);
+  background: var(--glass-card);
+  box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  -webkit-backdrop-filter: blur(18px) saturate(135%);
+  backdrop-filter: blur(18px) saturate(135%);
+  text-align: left;
+}
+
+.dashboardMetric:hover {
+  border-color: rgba(255, 255, 255, 0.86);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow:
+    0 16px 38px rgba(63, 43, 75, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.dashboardMetricIcon {
+  width: 40px;
+  height: 40px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.76);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.48);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.dashboardMetricCopy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboardMetricCopy strong {
+  font-size: 22px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.dashboardMetricCopy span {
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboardMetricArrow {
+  color: var(--text-faint);
+}
+
+.dashboardPreviewGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 16px;
+}
+
+.dashboardPreviewGrid > .glassBlock {
+  min-width: 0;
+}
+
+.dashboardNotePreview,
+.dashboardMemoryPreview {
+  width: 100%;
+  min-height: 126px;
+  border: 1px solid var(--control-border);
+  border-radius: 17px;
+  color: var(--text-primary);
+  background: var(--glass-control);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  text-align: left;
+}
+
+.dashboardNotePreview {
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.dashboardPreviewHeading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dashboardPreviewHeading > span:last-child {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dashboardPreviewHeading strong,
+.dashboardMemoryCopy strong {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 740;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboardPreviewHeading small,
+.dashboardMemoryCopy span {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.dashboardPreviewIcon {
+  width: 37px;
+  height: 37px;
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.76);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.dashboardPreviewIconNote {
+  color: #1d4ed8;
+}
+
+.dashboardNoteExcerpt {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.55;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.dashboardMemoryPreview {
+  padding: 9px;
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 13px;
+}
+
+.dashboardMemoryImage {
+  width: 100%;
+  min-height: 106px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.76);
+  border-radius: 13px;
+  color: var(--accent-dark);
+  background:
+    radial-gradient(circle at 22% 18%, rgba(255, 255, 255, 0.78), transparent 28%),
+    linear-gradient(145deg, rgba(159, 228, 245, 0.44), rgba(201, 176, 238, 0.48));
+}
+
+.dashboardMemoryImage img {
+  width: 100%;
+  height: 106px;
+  display: block;
+  object-fit: cover;
+}
+
+.dashboardMemoryCopy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.dashboardMemoryCopy small {
+  overflow: hidden;
+  color: var(--accent-dark);
+  font-size: 10px;
+  font-weight: 740;
+  letter-spacing: 0.035em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.dashboardMemoryArrow {
+  color: var(--text-faint);
+}
+
+.dashboardEmpty {
+  min-height: 126px;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  border: 1px dashed rgba(113, 105, 119, 0.22);
+  border-radius: 17px;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.26);
+}
+
+.dashboardEmpty > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dashboardEmpty strong {
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.dashboardEmpty span {
+  font-size: 11px;
+}
+
 @media (pointer: fine) {
   html,
   body,
@@ -1438,8 +1753,13 @@ a[data-pin-do] {
   }
 
   .grid2,
-  .notesLayout {
+  .notesLayout,
+  .dashboardPreviewGrid {
     grid-template-columns: 1fr !important;
+  }
+
+  .todayHero {
+    gap: 18px;
   }
 
   .memoryForm {
@@ -1514,6 +1834,70 @@ a[data-pin-do] {
 
   .content {
     padding: 10px 12px 24px !important;
+  }
+
+  .todayHero {
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 17px;
+  }
+
+  .todayHeading {
+    font-size: 27px;
+  }
+
+  .todayDate {
+    width: fit-content;
+    padding: 9px 11px;
+  }
+
+  .todayProgress {
+    margin-top: 16px;
+  }
+
+  .dashboardMetrics {
+    gap: 7px;
+  }
+
+  .dashboardMetric {
+    padding: 10px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 7px;
+    border-radius: 16px;
+  }
+
+  .dashboardMetricIcon {
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+  }
+
+  .dashboardMetricCopy strong {
+    font-size: 20px;
+  }
+
+  .dashboardMetricCopy span {
+    width: 100%;
+    font-size: 9px;
+    white-space: normal;
+  }
+
+  .dashboardMetricArrow,
+  .dashboardMemoryArrow {
+    display: none;
+  }
+
+  .dashboardMemoryPreview {
+    grid-template-columns: 92px minmax(0, 1fr);
+    gap: 11px;
+  }
+
+  .dashboardMemoryImage,
+  .dashboardMemoryImage img {
+    min-height: 88px;
+    height: 88px;
   }
 
   .taskComposer,

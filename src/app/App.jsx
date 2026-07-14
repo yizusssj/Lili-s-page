@@ -45,7 +45,7 @@ export default function App() {
 
         <section style={styles.content} className="content">
           <SyncStatus />
-          <ActivePage />
+          <ActivePage onNavigate={setActive} />
         </section>
       </main>
     </div>

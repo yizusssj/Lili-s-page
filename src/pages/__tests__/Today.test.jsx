@@ -1,6 +1,6 @@
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { renderWithWorkspace } from "../../test/renderWithWorkspace.jsx";
 import Today from "../Today.jsx";
 
@@ -41,5 +41,53 @@ describe("Hoy", () => {
     expect(screen.getByRole("textbox", { name: "Nota rápida" })).toHaveValue(
       "Comprar flores mañana",
     );
+  });
+
+  it("resume el workspace y permite abrir sus secciones", async () => {
+    const user = userEvent.setup();
+    const onNavigate = vi.fn();
+    renderWithWorkspace(<Today onNavigate={onNavigate} />, {
+      albums: [
+        {
+          id: "album-1",
+          title: "Viaje",
+          description: "",
+          createdAt: "2026-07-01T12:00:00.000Z",
+          updatedAt: "2026-07-01T12:00:00.000Z",
+        },
+      ],
+      memories: [
+        {
+          id: "memory-1",
+          albumId: "album-1",
+          title: "Atardecer",
+          description: "",
+          memoryDate: "2026-07-12",
+          createdAt: "2026-07-12T23:00:00.000Z",
+          imageUrl: "https://example.test/atardecer.jpg",
+        },
+      ],
+      notes: [
+        {
+          id: "note-1",
+          title: "Ideas del viaje",
+          content: "Lugares que queremos conocer.",
+          pinned: true,
+          createdAt: "2026-07-11T12:00:00.000Z",
+          updatedAt: "2026-07-12T12:00:00.000Z",
+        },
+      ],
+      tasks: [
+        { id: "task-1", text: "Preparar maleta", done: false },
+        { id: "task-2", text: "Comprar boletos", done: true },
+      ],
+    });
+
+    expect(screen.getByText("Ideas del viaje")).toBeInTheDocument();
+    expect(screen.getByText("Atardecer")).toBeInTheDocument();
+    expect(screen.getByText("Viaje")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "1 tarea pendiente" }));
+    expect(onNavigate).toHaveBeenCalledWith("tasks");
   });
 });
