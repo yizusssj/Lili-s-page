@@ -63,6 +63,7 @@ describe("Acceso privado", () => {
     expect(
       await screen.findByRole("heading", { name: "Bienvenida de nuevo" }),
     ).toBeInTheDocument();
+    expect(screen.getByText("Sesión guardada en este dispositivo")).toBeInTheDocument();
 
     await user.type(screen.getByRole("textbox", { name: "Correo" }), "lili@example.com");
     await user.type(screen.getByLabelText("Contraseña"), "una-clave-segura");
@@ -109,6 +110,6 @@ describe("Acceso privado", () => {
     await waitFor(() => expect(screen.getByText("Sesión de lili@example.com")).toBeInTheDocument());
     await user.click(screen.getByRole("button", { name: "Cerrar sesión" }));
 
-    expect(authMock.signOut).toHaveBeenCalledOnce();
+    expect(authMock.signOut).toHaveBeenCalledWith({ scope: "local" });
   });
 });

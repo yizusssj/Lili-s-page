@@ -52,6 +52,8 @@ body,
 
 html {
   background: var(--background-end);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
@@ -113,6 +115,13 @@ input,
 textarea,
 select {
   font: inherit;
+  touch-action: manipulation;
+}
+
+button,
+a,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
 }
 
 button {
@@ -2623,6 +2632,17 @@ input[type="checkbox"] {
   line-height: 1.4;
 }
 
+.pwaInstallWarning {
+  margin: -7px 0 14px;
+  padding: 9px 10px;
+  border: 1px solid rgba(40, 127, 149, 0.16);
+  border-radius: 12px;
+  color: var(--text-secondary);
+  background: rgba(224, 247, 252, 0.52);
+  font-size: 9px;
+  line-height: 1.5;
+}
+
 .pwaInstallDone {
   width: 100%;
   min-height: 42px;
@@ -2638,10 +2658,21 @@ input[type="checkbox"] {
 @media (display-mode: standalone) {
   body {
     min-height: 100dvh;
+    overscroll-behavior-y: none;
   }
 
   .content {
     padding-bottom: calc(34px + env(safe-area-inset-bottom)) !important;
+  }
+}
+
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 900px) {
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+    textarea,
+    select {
+      font-size: 16px !important;
+    }
   }
 }
 
@@ -2957,7 +2988,14 @@ a[data-pin-do] {
   color: var(--text-primary);
   background: transparent !important;
   box-shadow: none !important;
-  font-size: 14px;
+  font-size: 16px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.authField input:focus {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .authPasswordToggle {
@@ -3006,12 +3044,36 @@ a[data-pin-do] {
   margin-top: 20px;
   padding-top: 17px;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: flex-start;
+  justify-content: flex-start;
   gap: 7px;
   border-top: 1px solid rgba(255, 255, 255, 0.66);
   color: var(--text-muted);
   font-size: 11px;
+}
+
+.authPrivacy > svg {
+  margin-top: 2px;
+  flex: 0 0 auto;
+  color: #287f95;
+}
+
+.authPrivacy > span {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.authPrivacy strong {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.authPrivacy small {
+  color: var(--text-muted);
+  font-size: 9px;
+  line-height: 1.4;
 }
 
 .authStatusCard {
@@ -3171,13 +3233,31 @@ a[data-pin-do] {
   .sidebar nav {
     width: 100%;
     min-width: 0;
-    padding-bottom: 4px;
+    margin: -7px -7px -18px;
+    padding: 7px 22px 24px 7px;
     flex-direction: row !important;
     overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scroll-padding-inline: 18px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .sidebar nav::-webkit-scrollbar {
+    display: none;
   }
 
   .sidebar nav button {
     flex: 0 0 auto;
+    scroll-snap-align: center;
+  }
+
+  .sidebar .navItemActive {
+    box-shadow:
+      0 8px 18px rgba(51, 160, 187, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
   }
 
   .sidebar > :last-child {

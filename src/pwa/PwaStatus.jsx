@@ -143,8 +143,12 @@ export default function PwaStatus() {
                 <Download aria-hidden="true" size={17} strokeWidth={1.8} />
               </span>
               <span className="pwaNoticeCopy">
-                <strong>Instala Lili en tu dispositivo</strong>
-                <small>Ábrela desde tu pantalla de inicio como una aplicación.</small>
+                <strong>{ios ? "Todavía está abierta como página web" : "Instala Lili en tu dispositivo"}</strong>
+                <small>
+                  {ios
+                    ? "Si ves la barra del navegador, vuelve a añadirla como app web."
+                    : "Ábrela desde tu pantalla de inicio como una aplicación."}
+                </small>
               </span>
               <span className="pwaNoticeActions">
                 <button type="button" onClick={() => void installApp()}>
@@ -203,6 +207,11 @@ export default function PwaStatus() {
                 <div><strong>Añadir a pantalla de inicio</strong><small>Activa “Abrir como app web” y después toca Añadir.</small></div>
               </li>
             </ol>
+
+            <p className="pwaInstallWarning">
+              Si el icono actual todavía abre una barra con el dominio, elimínalo de la
+              pantalla de inicio y créalo nuevamente siguiendo estos pasos.
+            </p>
 
             <button
               type="button"

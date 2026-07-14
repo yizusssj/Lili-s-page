@@ -111,7 +111,10 @@ export default function LoginPage() {
 
         <div className="authPrivacy">
           <ShieldCheck aria-hidden="true" size={16} strokeWidth={1.7} />
-          <span>Acceso privado. No hay registro público.</span>
+          <span>
+            <strong>Sesión guardada en este dispositivo</strong>
+            <small>Solo tendrás que entrar de nuevo si cierras la sesión.</small>
+          </span>
         </div>
       </section>
     </main>

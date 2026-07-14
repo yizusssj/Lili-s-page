@@ -62,7 +62,7 @@ export default function AuthProvider({ children }) {
     if (!supabase) return { error: new Error("Supabase no está configurado.") };
 
     try {
-      return await supabase.auth.signOut();
+      return await supabase.auth.signOut({ scope: "local" });
     } catch (error) {
       return { error: normalizeError(error) };
     }
