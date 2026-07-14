@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import {
+  Bell,
   CalendarDays,
   CheckCircle2,
   CircleAlert,
@@ -15,6 +16,11 @@ import { styles } from "../app/styles.jsx";
 import Block from "../components/Block.jsx";
 import SectionTitle from "../components/SectionTitle.jsx";
 import { getLocalDateKey } from "../utils/date.js";
+import {
+  formatReminderLead,
+  formatTaskTime,
+  REMINDER_OPTIONS,
+} from "../utils/reminders.js";
 import { useWorkspace } from "../workspace/workspaceContext.js";
 
 const PRIORITIES = {
@@ -100,13 +106,17 @@ export default function Tasks() {
   } = useWorkspace();
   const [newTask, setNewTask] = useState("");
   const [newDueDate, setNewDueDate] = useState("");
+  const [newDueTime, setNewDueTime] = useState("");
   const [newPriority, setNewPriority] = useState("medium");
+  const [newReminder, setNewReminder] = useState("");
   const [adding, setAdding] = useState(false);
   const [filter, setFilter] = useState("pending");
   const [editingId, setEditingId] = useState(null);
   const [editedText, setEditedText] = useState("");
   const [editedDueDate, setEditedDueDate] = useState("");
+  const [editedDueTime, setEditedDueTime] = useState("");
   const [editedPriority, setEditedPriority] = useState("medium");
+  const [editedReminder, setEditedReminder] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
   const today = getLocalDateKey();
   const tomorrow = getTomorrowKey();
@@ -144,13 +154,17 @@ export default function Tasks() {
     setAdding(true);
     const saved = await addTask({
       dueDate: newDueDate || null,
+      dueTime: newDueTime || null,
       priority: newPriority,
+      reminderMinutesBefore: newReminder,
       text,
     });
     if (saved) {
       setNewTask("");
       setNewDueDate("");
+      setNewDueTime("");
       setNewPriority("medium");
+      setNewReminder("");
       setFilter("pending");
     }
     setAdding(false);
@@ -160,14 +174,18 @@ export default function Tasks() {
     setEditingId(task.id);
     setEditedText(task.text);
     setEditedDueDate(task.dueDate ?? "");
+    setEditedDueTime(task.dueTime ?? "");
     setEditedPriority(task.priority ?? "medium");
+    setEditedReminder(task.reminderMinutesBefore?.toString() ?? "");
   }
 
   function cancelEditing() {
     setEditingId(null);
     setEditedText("");
     setEditedDueDate("");
+    setEditedDueTime("");
     setEditedPriority("medium");
+    setEditedReminder("");
   }
 
   async function saveEditing(event, taskId) {
@@ -177,7 +195,9 @@ export default function Tasks() {
     setSavingEdit(true);
     const saved = await updateTask(taskId, {
       dueDate: editedDueDate || null,
+      dueTime: editedDueTime || null,
       priority: editedPriority,
+      reminderMinutesBefore: editedReminder,
       text: editedText,
     });
     if (saved) cancelEditing();
@@ -243,7 +263,32 @@ export default function Tasks() {
                 type="date"
                 min={today}
                 value={newDueDate}
-                onChange={(event) => setNewDueDate(event.target.value)}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setNewDueDate(value);
+                  if (!value) {
+                    setNewDueTime("");
+                    setNewReminder("");
+                  }
+                }}
+              />
+            </span>
+          </label>
+
+          <label className="taskFormField" htmlFor="new-task-time">
+            <span>Hora opcional</span>
+            <span className="taskInputWithIcon">
+              <Clock3 aria-hidden="true" size={15} strokeWidth={1.7} />
+              <input
+                id="new-task-time"
+                type="time"
+                value={newDueTime}
+                disabled={!newDueDate}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setNewDueTime(value);
+                  if (!value) setNewReminder("");
+                }}
               />
             </span>
           </label>
@@ -260,6 +305,25 @@ export default function Tasks() {
                 <option value="low">Baja</option>
                 <option value="medium">Media</option>
                 <option value="high">Alta</option>
+              </select>
+            </span>
+          </label>
+
+          <label className="taskFormField" htmlFor="new-task-reminder">
+            <span>Recordatorio</span>
+            <span className="taskInputWithIcon">
+              <Bell aria-hidden="true" size={15} strokeWidth={1.7} />
+              <select
+                id="new-task-reminder"
+                value={newReminder}
+                disabled={!newDueDate || !newDueTime}
+                onChange={(event) => setNewReminder(event.target.value)}
+              >
+                {REMINDER_OPTIONS.map((option) => (
+                  <option key={option.value || "none"} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </span>
           </label>
@@ -346,6 +410,19 @@ export default function Tasks() {
                             {dueStatus.label}
                           </span>
                         )}
+                        {task.dueTime && (
+                          <span className="taskDue">
+                            <Clock3 aria-hidden="true" size={12} strokeWidth={1.8} />
+                            {formatTaskTime(task.dueTime)}
+                          </span>
+                        )}
+                        {task.reminderMinutesBefore !== null
+                          && task.reminderMinutesBefore !== undefined && (
+                            <span className="taskReminderMeta">
+                              <Bell aria-hidden="true" size={12} strokeWidth={1.8} />
+                              {formatReminderLead(task.reminderMinutesBefore)}
+                            </span>
+                          )}
                       </div>
                     </div>
 
@@ -393,7 +470,28 @@ export default function Tasks() {
                           aria-label={`Editar fecha de ${task.text}`}
                           type="date"
                           value={editedDueDate}
-                          onChange={(event) => setEditedDueDate(event.target.value)}
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            setEditedDueDate(value);
+                            if (!value) {
+                              setEditedDueTime("");
+                              setEditedReminder("");
+                            }
+                          }}
+                        />
+                      </label>
+                      <label className="taskFormField">
+                        <span>Hora</span>
+                        <input
+                          aria-label={`Editar hora de ${task.text}`}
+                          type="time"
+                          value={editedDueTime}
+                          disabled={!editedDueDate}
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            setEditedDueTime(value);
+                            if (!value) setEditedReminder("");
+                          }}
                         />
                       </label>
                       <label className="taskFormField">
@@ -406,6 +504,21 @@ export default function Tasks() {
                           <option value="low">Baja</option>
                           <option value="medium">Media</option>
                           <option value="high">Alta</option>
+                        </select>
+                      </label>
+                      <label className="taskFormField">
+                        <span>Recordatorio</span>
+                        <select
+                          aria-label={`Editar recordatorio de ${task.text}`}
+                          value={editedReminder}
+                          disabled={!editedDueDate || !editedDueTime}
+                          onChange={(event) => setEditedReminder(event.target.value)}
+                        >
+                          {REMINDER_OPTIONS.map((option) => (
+                            <option key={option.value || "none"} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
                         </select>
                       </label>
                       <div className="taskEditActions">

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Luna y corazón de Lili">
+  <defs>
+    <linearGradient id="background" x1="54" y1="34" x2="460" y2="482" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#d9f7ff"/>
+      <stop offset="0.52" stop-color="#d9d5fa"/>
+      <stop offset="1" stop-color="#f6d7e5"/>
+    </linearGradient>
+    <linearGradient id="moon" x1="164" y1="132" x2="335" y2="356" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#daf7ff"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="20" flood-color="#5f5590" flood-opacity=".22"/>
+    </filter>
+    <mask id="crescent">
+      <rect width="512" height="512" fill="#000"/>
+      <circle cx="244" cy="248" r="132" fill="#fff"/>
+      <circle cx="296" cy="205" r="119" fill="#000"/>
+    </mask>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#background)"/>
+  <rect x="54" y="54" width="404" height="404" rx="104" fill="#ffffff" fill-opacity=".2" stroke="#ffffff" stroke-opacity=".58" stroke-width="5"/>
+  <g filter="url(#shadow)">
+    <rect width="512" height="512" fill="url(#moon)" mask="url(#crescent)"/>
+  </g>
+  <path d="M349 313c-22-29-72-10-65 27 5 28 36 46 65 70 29-24 60-42 65-70 7-37-43-56-65-27Z" fill="#e85f91" stroke="#ffffff" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M115 157v-25m-13 13h26" stroke="#ffffff" stroke-width="8" stroke-linecap="round"/>
+  <path d="M388 119v-16m-8 8h16" stroke="#ffffff" stroke-width="6" stroke-linecap="round"/>
+</svg>

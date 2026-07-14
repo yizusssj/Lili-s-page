@@ -4,7 +4,7 @@
 
 do $$
 declare
-  user_email text := 'USER_EMAIL_HERE';
+  user_email text := 'valdezhdez00@gmail.com';
   personal_workspace_name text := 'Espacio de Lili';
   target_user_id uuid;
   personal_workspace_id uuid;

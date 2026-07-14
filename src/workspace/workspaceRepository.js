@@ -11,11 +11,16 @@ function mapTask(row) {
     text: row.text,
     done: row.done,
     dueDate: row.due_date,
+    dueTime: row.due_time ? row.due_time.slice(0, 5) : null,
     priority: row.priority ?? "medium",
+    reminderMinutesBefore: row.reminder_minutes_before,
+    reminderAcknowledgedAt: row.reminder_acknowledged_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
+
+const TASK_SELECT = "id, text, done, due_date, due_time, priority, reminder_minutes_before, reminder_acknowledged_at, created_at, updated_at";
 
 function mapNote(row) {
   return {
@@ -167,7 +172,7 @@ export async function fetchWorkspaceData(
   ] = await Promise.all([
     client
       .from("tasks")
-      .select("id, text, done, due_date, priority, created_at, updated_at")
+      .select(TASK_SELECT)
       .eq("workspace_id", workspaceId)
       .order("created_at", { ascending: false }),
     client
@@ -379,12 +384,15 @@ export async function insertTask(client, workspaceId, userId, task) {
       created_by: userId,
       done: task.done,
       due_date: task.dueDate,
+      due_time: task.dueTime,
       id: task.id,
       priority: task.priority,
+      reminder_acknowledged_at: task.reminderAcknowledgedAt,
+      reminder_minutes_before: task.reminderMinutesBefore,
       text: task.text,
       workspace_id: workspaceId,
     })
-    .select("id, text, done, due_date, priority, created_at, updated_at")
+    .select(TASK_SELECT)
     .single();
 
   throwIfError(error, "No se pudo crear la tarea.");
@@ -397,7 +405,7 @@ export async function updateTask(client, workspaceId, taskId, fields) {
     .update(fields)
     .eq("workspace_id", workspaceId)
     .eq("id", taskId)
-    .select("id, text, done, due_date, priority, created_at, updated_at")
+    .select(TASK_SELECT)
     .single();
 
   throwIfError(error, "No se pudo actualizar la tarea.");

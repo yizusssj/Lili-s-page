@@ -3,6 +3,7 @@ import {
   ArrowDown,
   ArrowRight,
   ArrowUp,
+  BellRing,
   CalendarDays,
   Camera,
   CircleCheckBig,
@@ -15,8 +16,10 @@ import {
 } from "lucide-react";
 import { styles } from "../app/styles.jsx";
 import Block from "../components/Block.jsx";
+import { OPEN_REMINDERS_EVENT } from "../components/ReminderCenter.jsx";
 import SectionTitle from "../components/SectionTitle.jsx";
 import { formatCalendarDate, formatNoteDate, getLocalDateKey } from "../utils/date.js";
+import { getActiveReminders } from "../utils/reminders.js";
 import { useWorkspace } from "../workspace/workspaceContext.js";
 
 function capitalize(value) {
@@ -168,6 +171,10 @@ export default function Today({ onNavigate = () => {} }) {
         || (task.dueDate && task.dueDate <= todayKey)
       ),
   ).length;
+  const activeReminders = useMemo(
+    () => getActiveReminders(tasks, now),
+    [now, tasks],
+  );
   const completedPriorities = items.filter((item) => item.done).length;
   const priorityProgress = items.length
     ? Math.round((completedPriorities / items.length) * 100)
@@ -254,6 +261,27 @@ export default function Today({ onNavigate = () => {} }) {
           value={memories.length}
         />
       </div>
+
+      {activeReminders.length > 0 && (
+        <button
+          type="button"
+          className="todayReminderBanner"
+          onClick={() => window.dispatchEvent(new Event(OPEN_REMINDERS_EVENT))}
+        >
+          <span className="todayReminderIcon">
+            <BellRing aria-hidden="true" size={19} strokeWidth={1.8} />
+          </span>
+          <span>
+            <strong>
+              {activeReminders.length === 1
+                ? "Tienes un recordatorio pendiente"
+                : `Tienes ${activeReminders.length} recordatorios pendientes`}
+            </strong>
+            <small>{activeReminders[0].text}</small>
+          </span>
+          <ArrowRight aria-hidden="true" size={17} strokeWidth={1.8} />
+        </button>
+      )}
 
       <div style={styles.grid2} className="grid2 todayWorkspaceGrid">
         <Block

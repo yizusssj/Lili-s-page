@@ -1,7 +1,12 @@
-import { DatabaseZap, LoaderCircle, RefreshCw } from "lucide-react";
+import { DatabaseZap, LoaderCircle, RefreshCw, WifiOff } from "lucide-react";
+import useOnlineStatus from "../pwa/useOnlineStatus.js";
 import { useWorkspace } from "./workspaceContext.js";
 
-function getWorkspaceErrorMessage(error) {
+function getWorkspaceErrorMessage(error, online) {
+  if (!online) {
+    return "Conéctate a internet para recuperar tus datos privados de Supabase.";
+  }
+
   if (error?.code === "WORKSPACE_NOT_FOUND") {
     return "Tu cuenta aún no pertenece a un workspace. Ejecuta bootstrap_owner.sql o add_member.sql en Supabase.";
   }
@@ -37,6 +42,7 @@ function getWorkspaceErrorMessage(error) {
 
 export default function WorkspaceGate({ children }) {
   const { initializationError, loading, retryInitialization } = useWorkspace();
+  const online = useOnlineStatus();
 
   if (loading) {
     return (
@@ -57,10 +63,14 @@ export default function WorkspaceGate({ children }) {
       <main className="authShell">
         <section className="authCard authStatusCard" role="alert">
           <div className="authLogo" aria-hidden="true">
-            <DatabaseZap size={25} strokeWidth={1.7} />
+            {online ? (
+              <DatabaseZap size={25} strokeWidth={1.7} />
+            ) : (
+              <WifiOff size={25} strokeWidth={1.7} />
+            )}
           </div>
-          <h1>No pudimos abrir el workspace</h1>
-          <p>{getWorkspaceErrorMessage(initializationError)}</p>
+          <h1>{online ? "No pudimos abrir el workspace" : "Estás sin conexión"}</h1>
+          <p>{getWorkspaceErrorMessage(initializationError, online)}</p>
           <button type="button" className="authSubmit" onClick={retryInitialization}>
             <RefreshCw aria-hidden="true" size={17} strokeWidth={1.8} />
             Reintentar

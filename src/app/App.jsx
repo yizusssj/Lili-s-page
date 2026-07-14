@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { useAuth } from "../auth/authContext.js";
 import Sidebar from "../components/Sidebar.jsx";
 import SyncStatus from "../components/SyncStatus.jsx";
@@ -10,9 +10,12 @@ import Today from "../pages/Today.jsx";
 import { PAGES } from "./config.js";
 import { styles } from "./styles.jsx";
 
+const Calendar = lazy(() => import("../pages/Calendar.jsx"));
+
 const PAGE_COMPONENTS = {
   today: Today,
   tasks: Tasks,
+  calendar: Calendar,
   notes: Notes,
   memories: Memories,
   pinterest: Pinterest,
@@ -45,7 +48,9 @@ export default function App() {
 
         <section style={styles.content} className="content">
           <SyncStatus />
-          <ActivePage onNavigate={setActive} />
+          <Suspense fallback={<div className="pageLoading">Abriendo calendario...</div>}>
+            <ActivePage onNavigate={setActive} />
+          </Suspense>
         </section>
       </main>
     </div>

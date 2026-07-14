@@ -1,4 +1,4 @@
-import { Camera, ListTodo, NotebookPen, Pin, Sun } from "lucide-react";
+import { CalendarDays, Camera, ListTodo, NotebookPen, Pin, Sun } from "lucide-react";
 
 export const STORAGE_KEYS = {
   notes: "lili_notes_v1",
@@ -16,6 +16,7 @@ export const BRAND_IMAGE = null;
 export const PAGES = [
   { id: "today", name: "Hoy", icon: Sun, color: "#b45309" },
   { id: "tasks", name: "Tareas", icon: ListTodo, color: "#047857" },
+  { id: "calendar", name: "Calendario", icon: CalendarDays, color: "#287f95" },
   { id: "notes", name: "Notas", icon: NotebookPen, color: "#1d4ed8" },
   { id: "memories", name: "Recuerdos", icon: Camera, color: "#7e22ce" },
   { id: "pinterest", name: "Pinterest", icon: Pin, color: "#be123c" },

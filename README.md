@@ -1,16 +1,40 @@
-# React + Vite
+# Lili — Mi espacio
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplicación privada para organizar tareas, calendario, notas, recordatorios y álbumes de recuerdos. Está construida con React, Vite, Supabase y pnpm, y puede instalarse como PWA en iPhone y escritorio.
 
-Currently, two official plugins are available:
+## Desarrollo local
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+```bash
+pnpm install
+pnpm dev
+```
 
-## React Compiler
+Crea un archivo `.env.local` con las variables públicas del proyecto de Supabase:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```env
+VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=tu_publishable_key
+```
 
-## Expanding the ESLint configuration
+## Comprobaciones
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+pnpm lint
+pnpm test
+pnpm build
+```
+
+## Base de datos
+
+Las migraciones están ordenadas dentro de `supabase/migrations`. Deben ejecutarse en ese orden desde el SQL Editor de Supabase cuando se agregue una función nueva.
+
+## Instalación en iPhone
+
+1. Abre la URL de producción en Safari.
+2. Pulsa **Compartir**.
+3. Selecciona **Añadir a pantalla de inicio**.
+4. Activa **Abrir como app web** y pulsa **Añadir**.
+
+La PWA guarda únicamente la estructura pública de la aplicación —HTML, CSS, JavaScript e iconos— para acelerar la apertura. Los datos privados y las fotografías continúan consultándose directamente desde Supabase y no se almacenan en la caché del service worker.
+
+Cuando se publique una versión nueva, la aplicación mostrará un aviso para actualizarla de forma segura.

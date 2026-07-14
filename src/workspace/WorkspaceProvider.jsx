@@ -4,6 +4,7 @@ import { useAuth } from "../auth/authContext.js";
 import { supabase } from "../lib/supabase.js";
 import { getLocalDateKey } from "../utils/date.js";
 import { prepareMemoryImage } from "../utils/images.js";
+import { normalizeReminderMinutes } from "../utils/reminders.js";
 import { writeJSON, writeText } from "../utils/storage.js";
 import { WorkspaceContext } from "./workspaceContext.js";
 import {
@@ -61,9 +62,17 @@ function normalizeTaskInput(value) {
   const dueDate = typeof input.dueDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(input.dueDate)
     ? input.dueDate
     : null;
+  const dueTime = dueDate
+    && typeof input.dueTime === "string"
+    && /^\d{2}:\d{2}$/.test(input.dueTime)
+    ? input.dueTime
+    : null;
   const priority = TASK_PRIORITIES.has(input.priority) ? input.priority : "medium";
+  const reminderMinutesBefore = dueTime
+    ? normalizeReminderMinutes(input.reminderMinutesBefore)
+    : null;
 
-  return { dueDate, priority, text };
+  return { dueDate, dueTime, priority, reminderMinutesBefore, text };
 }
 
 export default function WorkspaceProvider({ children }) {
@@ -275,7 +284,13 @@ export default function WorkspaceProvider({ children }) {
   const addTask = useCallback(
     async (value) => {
       const currentWorkspace = workspaceRef.current;
-      const { dueDate, priority, text } = normalizeTaskInput(value);
+      const {
+        dueDate,
+        dueTime,
+        priority,
+        reminderMinutesBefore,
+        text,
+      } = normalizeTaskInput(value);
       if (!currentWorkspace || !userId || !text) return false;
 
       const now = new Date().toISOString();
@@ -284,7 +299,10 @@ export default function WorkspaceProvider({ children }) {
         text,
         done: false,
         dueDate,
+        dueTime,
         priority,
+        reminderAcknowledgedAt: null,
+        reminderMinutesBefore,
         createdAt: now,
         updatedAt: now,
       };
@@ -325,19 +343,58 @@ export default function WorkspaceProvider({ children }) {
         databaseFields.text = text;
       }
 
-      if (Object.hasOwn(fields, "dueDate")) {
-        const dueDate = typeof fields.dueDate === "string"
-          && /^\d{4}-\d{2}-\d{2}$/.test(fields.dueDate)
-          ? fields.dueDate
-          : null;
-        nextFields.dueDate = dueDate;
-        databaseFields.due_date = dueDate;
-      }
-
       if (Object.hasOwn(fields, "priority")) {
         if (!TASK_PRIORITIES.has(fields.priority)) return false;
         nextFields.priority = fields.priority;
         databaseFields.priority = fields.priority;
+      }
+
+      const scheduleChanged = Object.hasOwn(fields, "dueDate")
+        || Object.hasOwn(fields, "dueTime")
+        || Object.hasOwn(fields, "reminderMinutesBefore");
+
+      if (scheduleChanged) {
+        const dueDateInput = Object.hasOwn(fields, "dueDate")
+          ? fields.dueDate
+          : previous.dueDate;
+        const dueDate = typeof dueDateInput === "string"
+          && /^\d{4}-\d{2}-\d{2}$/.test(dueDateInput)
+          ? dueDateInput
+          : null;
+        const dueTimeInput = Object.hasOwn(fields, "dueTime")
+          ? fields.dueTime
+          : previous.dueTime;
+        const dueTime = dueDate
+          && typeof dueTimeInput === "string"
+          && /^\d{2}:\d{2}$/.test(dueTimeInput)
+          ? dueTimeInput
+          : null;
+        const reminderInput = Object.hasOwn(fields, "reminderMinutesBefore")
+          ? fields.reminderMinutesBefore
+          : previous.reminderMinutesBefore;
+        const reminderMinutesBefore = dueTime
+          ? normalizeReminderMinutes(reminderInput)
+          : null;
+
+        Object.assign(nextFields, {
+          dueDate,
+          dueTime,
+          reminderAcknowledgedAt: null,
+          reminderMinutesBefore,
+        });
+        Object.assign(databaseFields, {
+          due_date: dueDate,
+          due_time: dueTime,
+          reminder_acknowledged_at: null,
+          reminder_minutes_before: reminderMinutesBefore,
+        });
+      } else if (Object.hasOwn(fields, "reminderAcknowledgedAt")) {
+        const acknowledgedAt = typeof fields.reminderAcknowledgedAt === "string"
+          && !Number.isNaN(new Date(fields.reminderAcknowledgedAt).getTime())
+          ? fields.reminderAcknowledgedAt
+          : null;
+        nextFields.reminderAcknowledgedAt = acknowledgedAt;
+        databaseFields.reminder_acknowledged_at = acknowledgedAt;
       }
 
       if (Object.keys(databaseFields).length === 0) return true;

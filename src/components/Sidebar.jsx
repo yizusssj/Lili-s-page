@@ -2,6 +2,7 @@ import { Heart, LogOut } from "lucide-react";
 import { BRAND_IMAGE, PAGES } from "../app/config.js";
 import { styles } from "../app/styles.jsx";
 import AppIcon from "./AppIcon.jsx";
+import ReminderCenter from "./ReminderCenter.jsx";
 
 export default function Sidebar({ active, onNavigate, onSignOut, userEmail }) {
   return (
@@ -16,16 +17,19 @@ export default function Sidebar({ active, onNavigate, onSignOut, userEmail }) {
           <div style={styles.brandTitle}>Workspace</div>
           <div style={styles.brandSub}>de lili</div>
         </div>
-        <button
-          type="button"
-          onClick={() => void onSignOut()}
-          className="glassIconButton logoutButton"
-          style={{ ...styles.iconBtn, marginLeft: "auto", flexShrink: 0 }}
-          aria-label="Cerrar sesión"
-          title="Cerrar sesión"
-        >
-          <LogOut aria-hidden="true" size={16} strokeWidth={1.8} />
-        </button>
+        <div className="brandActions">
+          <ReminderCenter />
+          <button
+            type="button"
+            onClick={() => void onSignOut()}
+            className="glassIconButton logoutButton"
+            style={{ ...styles.iconBtn, flexShrink: 0 }}
+            aria-label="Cerrar sesión"
+            title="Cerrar sesión"
+          >
+            <LogOut aria-hidden="true" size={16} strokeWidth={1.8} />
+          </button>
+        </div>
       </div>
 
       <nav style={styles.nav} aria-label="Navegación principal">
