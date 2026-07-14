@@ -71,3 +71,15 @@ Ejecuta también `migrations/20260713020000_album_custom_covers.sql` para activa
 Ejecuta `migrations/20260713023000_album_management.sql` para activar la eliminación transaccional de álbumes. La aplicación elimina primero los archivos privados del bucket y después borra en una sola operación los recuerdos y el álbum.
 
 Finalmente vuelve a correr `verify_shared_workspace.sql`. Deben aparecer ocho tablas públicas con RLS, treinta y dos políticas públicas, el bucket privado y tres políticas sobre `storage.objects`.
+
+## Activar las tareas avanzadas
+
+Ejecuta una sola vez `migrations/20260713030000_advanced_tasks.sql` después de las migraciones del workspace compartido.
+
+Esta migración conserva todas las tareas actuales y añade:
+
+- una fecha límite opcional;
+- prioridad baja, media o alta;
+- un índice para consultar pendientes, próximas y completadas con rapidez.
+
+Las tareas que ya existían quedan con prioridad media y sin fecha. La migración es aditiva y puede volver a ejecutarse sin duplicar información.

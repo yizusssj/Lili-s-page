@@ -16,7 +16,7 @@ import {
 import { styles } from "../app/styles.jsx";
 import Block from "../components/Block.jsx";
 import SectionTitle from "../components/SectionTitle.jsx";
-import { formatCalendarDate, formatNoteDate } from "../utils/date.js";
+import { formatCalendarDate, formatNoteDate, getLocalDateKey } from "../utils/date.js";
 import { useWorkspace } from "../workspace/workspaceContext.js";
 
 function capitalize(value) {
@@ -159,7 +159,15 @@ export default function Today({ onNavigate = () => {} }) {
     return () => window.clearTimeout(timeoutId);
   }, [resetPriorities]);
 
-  const pendingTasks = tasks.filter((task) => !task.done).length;
+  const todayKey = getLocalDateKey(now);
+  const focusTaskCount = tasks.filter(
+    (task) =>
+      !task.done
+      && (
+        task.priority === "high"
+        || (task.dueDate && task.dueDate <= todayKey)
+      ),
+  ).length;
   const completedPriorities = items.filter((item) => item.done).length;
   const priorityProgress = items.length
     ? Math.round((completedPriorities / items.length) * 100)
@@ -227,9 +235,9 @@ export default function Today({ onNavigate = () => {} }) {
         <DashboardMetric
           color="#047857"
           icon={ListTodo}
-          label={pendingTasks === 1 ? "tarea pendiente" : "tareas pendientes"}
+          label={focusTaskCount === 1 ? "tarea para hoy" : "tareas para hoy"}
           onClick={() => onNavigate("tasks")}
-          value={pendingTasks}
+          value={focusTaskCount}
         />
         <DashboardMetric
           color="#1d4ed8"

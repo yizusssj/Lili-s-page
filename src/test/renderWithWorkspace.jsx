@@ -19,11 +19,32 @@ function WorkspaceHarness({ children, initialData }) {
   );
   const [quickNote, setQuickNote] = useState(initialData.quickNote ?? "");
 
-  async function addTask(text) {
+  async function addTask(value) {
+    const input = typeof value === "string" ? { text: value } : value;
+    const now = new Date().toISOString();
     setTasks((current) => [
-      { id: crypto.randomUUID(), text, done: false },
+      {
+        id: crypto.randomUUID(),
+        text: input.text,
+        done: false,
+        dueDate: input.dueDate ?? null,
+        priority: input.priority ?? "medium",
+        createdAt: now,
+        updatedAt: now,
+      },
       ...current,
     ]);
+    return true;
+  }
+
+  async function updateTask(taskId, fields) {
+    setTasks((current) =>
+      current.map((task) =>
+        task.id === taskId
+          ? { ...task, ...fields, updatedAt: new Date().toISOString() }
+          : task,
+      ),
+    );
     return true;
   }
 
@@ -185,6 +206,7 @@ function WorkspaceHarness({ children, initialData }) {
         ),
       ),
     toggleTask,
+    updateTask,
     updateNoteDraft,
     updateAlbum: async (albumId, fields) => {
       const previous = albums.find((album) => album.id === albumId);

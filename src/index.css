@@ -110,7 +110,8 @@ body {
 
 button,
 input,
-textarea {
+textarea,
+select {
   font: inherit;
 }
 
@@ -146,7 +147,8 @@ button:disabled {
 }
 
 input,
-textarea {
+textarea,
+select {
   transition:
     background-color 170ms ease,
     border-color 170ms ease,
@@ -154,7 +156,8 @@ textarea {
 }
 
 input:focus,
-textarea:focus {
+textarea:focus,
+select:focus {
   border-color: rgba(40, 127, 149, 0.42) !important;
   background: rgba(255, 255, 255, 0.82) !important;
   box-shadow:
@@ -915,6 +918,350 @@ input[type="checkbox"] {
   align-items: center;
   justify-content: center;
   gap: 6px;
+}
+
+.taskPageIntro {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.taskPageIntro h1 {
+  margin: 0;
+  font-size: clamp(23px, 3vw, 32px);
+  font-weight: 790;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+}
+
+.taskPageIntro p {
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.taskSummary {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  gap: 7px;
+}
+
+.taskSummary > div {
+  min-width: 96px;
+  padding: 9px 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--control-border);
+  border-radius: 13px;
+  color: var(--accent-dark);
+  background: rgba(255, 255, 255, 0.42);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.taskSummary span {
+  display: flex;
+  flex-direction: column;
+  color: var(--text-muted);
+  font-size: 9px;
+  line-height: 1.15;
+}
+
+.taskSummary strong {
+  color: var(--text-primary);
+  font-size: 15px;
+}
+
+.taskComposerAdvanced {
+  margin-top: 22px;
+  padding-top: 18px;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 172px 142px auto;
+  align-items: end;
+  gap: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.64);
+}
+
+.taskFormField {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.taskFormField > span:first-child {
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 720;
+  letter-spacing: 0.025em;
+}
+
+.taskFormField > input,
+.taskFormField > select,
+.taskInputWithIcon {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--control-border);
+  border-radius: 14px;
+  outline: 0;
+  color: var(--text-primary);
+  background: var(--glass-control-strong);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  font-size: 12px;
+}
+
+.taskFormField > input,
+.taskFormField > select {
+  padding: 10px 12px;
+}
+
+.taskInputWithIcon {
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-muted);
+}
+
+.taskInputWithIcon input,
+.taskInputWithIcon select {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 0;
+  border: 0;
+  outline: 0;
+  color: var(--text-primary);
+  background: transparent !important;
+  box-shadow: none !important;
+  font-size: 12px;
+}
+
+.taskAddButton {
+  min-height: 44px;
+}
+
+.taskFilters {
+  padding: 4px;
+  display: flex;
+  gap: 5px;
+  overflow-x: auto;
+  border: 1px solid var(--control-border);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.taskFilter {
+  min-width: max-content;
+  padding: 8px 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  color: var(--text-secondary);
+  background: transparent;
+  font-size: 11px;
+  font-weight: 660;
+}
+
+.taskFilter span {
+  min-width: 19px;
+  padding: 2px 5px;
+  border-radius: 999px;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.55);
+  font-size: 9px;
+  text-align: center;
+}
+
+.taskFilterActive {
+  border-color: rgba(255, 255, 255, 0.72);
+  color: var(--accent-text);
+  background: rgba(159, 228, 245, 0.5);
+  box-shadow:
+    0 7px 18px rgba(51, 160, 187, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.74);
+}
+
+.advancedTaskList {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.advancedTaskRow {
+  overflow: hidden;
+  border: 1px solid var(--control-border);
+  border-radius: 17px;
+  background: var(--glass-control);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.66);
+  transition:
+    border-color 170ms ease,
+    background-color 170ms ease,
+    box-shadow 170ms ease;
+}
+
+.advancedTaskRow:hover {
+  border-color: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.advancedTaskRowOverdue {
+  border-left-color: rgba(190, 18, 60, 0.44);
+  box-shadow:
+    inset 3px 0 0 rgba(190, 18, 60, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.66);
+}
+
+.advancedTaskRowDone {
+  opacity: 0.72;
+}
+
+.advancedTaskMain {
+  min-width: 0;
+  padding: 12px 13px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.advancedTaskMain > input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+}
+
+.advancedTaskCopy {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.advancedTaskCopy > strong {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 680;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.advancedTaskRowDone .advancedTaskCopy > strong {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.advancedTaskMeta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.taskPriority,
+.taskDue {
+  padding: 3px 7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 690;
+}
+
+.taskPriorityhigh {
+  color: #9f1239;
+  background: rgba(255, 228, 230, 0.7);
+}
+
+.taskPrioritymedium {
+  color: #9a6700;
+  background: rgba(254, 249, 195, 0.62);
+}
+
+.taskPrioritylow {
+  color: #287f95;
+  background: rgba(224, 247, 252, 0.7);
+}
+
+.taskDue {
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.48);
+}
+
+.taskDueoverdue {
+  color: #9f1239;
+  background: rgba(255, 241, 242, 0.74);
+}
+
+.taskDuetoday {
+  color: #9a6700;
+  background: rgba(255, 251, 235, 0.74);
+}
+
+.advancedTaskActions {
+  display: flex;
+  gap: 6px;
+}
+
+.taskEditForm {
+  padding: 13px;
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 150px 130px auto;
+  align-items: end;
+  gap: 9px;
+  border-top: 1px solid rgba(255, 255, 255, 0.68);
+  background: rgba(255, 255, 255, 0.26);
+}
+
+.taskEditActions {
+  display: flex;
+  gap: 7px;
+}
+
+.taskEmptyState {
+  min-height: 210px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed rgba(113, 105, 119, 0.22);
+  border-radius: 17px;
+  background: rgba(255, 255, 255, 0.24);
+  text-align: center;
+}
+
+.taskEmptyIcon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 12px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.76);
+  border-radius: 16px;
+  color: var(--accent-dark);
+  background: rgba(159, 228, 245, 0.34);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76);
+}
+
+.taskEmptyState strong {
+  font-size: 14px;
+}
+
+.taskEmptyState p {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.5;
 }
 
 .todayHero {
@@ -1762,6 +2109,29 @@ a[data-pin-do] {
     gap: 18px;
   }
 
+  .taskPageIntro {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .taskComposerAdvanced {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .taskFormFieldText,
+  .taskAddButton {
+    grid-column: 1 / -1;
+  }
+
+  .taskEditForm {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .taskEditText,
+  .taskEditActions {
+    grid-column: 1 / -1;
+  }
+
   .memoryForm {
     grid-template-columns: 1fr;
   }
@@ -1898,6 +2268,51 @@ a[data-pin-do] {
   .dashboardMemoryImage img {
     min-height: 88px;
     height: 88px;
+  }
+
+  .taskSummary {
+    width: 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .taskSummary > div {
+    min-width: 0;
+    padding: 9px 7px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .taskComposerAdvanced,
+  .taskEditForm {
+    grid-template-columns: 1fr;
+  }
+
+  .taskFormFieldText,
+  .taskAddButton,
+  .taskEditText,
+  .taskEditActions {
+    grid-column: auto;
+  }
+
+  .taskFilters {
+    margin: 0 -2px;
+  }
+
+  .advancedTaskMain {
+    padding: 11px;
+    align-items: flex-start;
+  }
+
+  .advancedTaskActions {
+    flex-direction: column;
+  }
+
+  .taskEditActions {
+    flex-direction: column-reverse;
+  }
+
+  .taskEditActions button {
+    width: 100%;
   }
 
   .taskComposer,

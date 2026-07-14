@@ -53,6 +53,19 @@ function applyPendingNoteFields(note, fields) {
   };
 }
 
+const TASK_PRIORITIES = new Set(["low", "medium", "high"]);
+
+function normalizeTaskInput(value) {
+  const input = typeof value === "string" ? { text: value } : value ?? {};
+  const text = typeof input.text === "string" ? input.text.trim().slice(0, 500) : "";
+  const dueDate = typeof input.dueDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(input.dueDate)
+    ? input.dueDate
+    : null;
+  const priority = TASK_PRIORITIES.has(input.priority) ? input.priority : "medium";
+
+  return { dueDate, priority, text };
+}
+
 export default function WorkspaceProvider({ children }) {
   const { user } = useAuth();
   const userId = user?.id;
@@ -262,10 +275,19 @@ export default function WorkspaceProvider({ children }) {
   const addTask = useCallback(
     async (value) => {
       const currentWorkspace = workspaceRef.current;
-      const text = value.trim().slice(0, 500);
+      const { dueDate, priority, text } = normalizeTaskInput(value);
       if (!currentWorkspace || !userId || !text) return false;
 
-      const task = { id: crypto.randomUUID(), text, done: false };
+      const now = new Date().toISOString();
+      const task = {
+        id: crypto.randomUUID(),
+        text,
+        done: false,
+        dueDate,
+        priority,
+        createdAt: now,
+        updatedAt: now,
+      };
       commitTasks([task, ...tasksRef.current]);
 
       const result = await performWrite(
@@ -284,6 +306,66 @@ export default function WorkspaceProvider({ children }) {
       return true;
     },
     [commitTasks, performWrite, userId],
+  );
+
+  const updateTask = useCallback(
+    async (taskId, fields) => {
+      const currentWorkspace = workspaceRef.current;
+      const previousTasks = tasksRef.current;
+      const previous = previousTasks.find((task) => task.id === taskId);
+      if (!currentWorkspace || !previous) return false;
+
+      const nextFields = {};
+      const databaseFields = {};
+
+      if (Object.hasOwn(fields, "text")) {
+        const text = typeof fields.text === "string" ? fields.text.trim().slice(0, 500) : "";
+        if (!text) return false;
+        nextFields.text = text;
+        databaseFields.text = text;
+      }
+
+      if (Object.hasOwn(fields, "dueDate")) {
+        const dueDate = typeof fields.dueDate === "string"
+          && /^\d{4}-\d{2}-\d{2}$/.test(fields.dueDate)
+          ? fields.dueDate
+          : null;
+        nextFields.dueDate = dueDate;
+        databaseFields.due_date = dueDate;
+      }
+
+      if (Object.hasOwn(fields, "priority")) {
+        if (!TASK_PRIORITIES.has(fields.priority)) return false;
+        nextFields.priority = fields.priority;
+        databaseFields.priority = fields.priority;
+      }
+
+      if (Object.keys(databaseFields).length === 0) return true;
+
+      commitTasks(
+        previousTasks.map((task) =>
+          task.id === taskId
+            ? { ...task, ...nextFields, updatedAt: new Date().toISOString() }
+            : task,
+        ),
+      );
+
+      const result = await performWrite(
+        () => updateTaskRemote(supabase, currentWorkspace.id, taskId, databaseFields),
+        "No se pudo actualizar la tarea.",
+      );
+
+      if (result.error) {
+        commitTasks(previousTasks);
+        return false;
+      }
+
+      commitTasks(
+        tasksRef.current.map((task) => (task.id === taskId ? result.data : task)),
+      );
+      return true;
+    },
+    [commitTasks, performWrite],
   );
 
   const toggleTask = useCallback(
@@ -839,6 +921,7 @@ export default function WorkspaceProvider({ children }) {
     tasks,
     togglePriority,
     toggleTask,
+    updateTask,
     updateNoteDraft,
     updateAlbum,
     updatePriorityText,

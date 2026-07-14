@@ -78,8 +78,20 @@ describe("Hoy", () => {
         },
       ],
       tasks: [
-        { id: "task-1", text: "Preparar maleta", done: false },
-        { id: "task-2", text: "Comprar boletos", done: true },
+        {
+          id: "task-1",
+          text: "Preparar maleta",
+          done: false,
+          dueDate: null,
+          priority: "high",
+        },
+        {
+          id: "task-2",
+          text: "Comprar boletos",
+          done: true,
+          dueDate: null,
+          priority: "medium",
+        },
       ],
     });
 
@@ -87,7 +99,7 @@ describe("Hoy", () => {
     expect(screen.getByText("Atardecer")).toBeInTheDocument();
     expect(screen.getByText("Viaje")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "1 tarea pendiente" }));
+    await user.click(screen.getByRole("button", { name: "1 tarea para hoy" }));
     expect(onNavigate).toHaveBeenCalledWith("tasks");
   });
 });
