@@ -144,16 +144,6 @@ export default function Calendar({ onNavigate = () => {} }) {
 
   const monthDays = useMemo(() => buildMonthDays(visibleMonth), [visibleMonth]);
   const selectedTasks = tasksByDate.get(selectedDate) ?? [];
-  const selectedIsPast = selectedDate < today;
-  const monthKey = `${visibleMonth.getFullYear()}-${String(visibleMonth.getMonth() + 1).padStart(2, "0")}`;
-
-  const monthAgenda = useMemo(
-    () =>
-      [...tasksByDate.entries()]
-        .filter(([date]) => date.startsWith(monthKey))
-        .map(([date, items]) => ({ date, items })),
-    [monthKey, tasksByDate],
-  );
 
   const upcomingTasks = useMemo(
     () => datedTasks.filter((task) => !task.done && task.dueDate >= today).slice(0, 6),
@@ -192,7 +182,7 @@ export default function Calendar({ onNavigate = () => {} }) {
   async function handleAddTask(event) {
     event.preventDefault();
     const text = newTask.trim();
-    if (!text || adding || selectedIsPast) return;
+    if (!text || adding) return;
 
     setAdding(true);
     const saved = await addTask({
@@ -293,35 +283,6 @@ export default function Calendar({ onNavigate = () => {} }) {
             </div>
           </div>
 
-          <div className="calendarMobileAgenda">
-            {monthAgenda.length === 0 ? (
-              <div className="calendarEmptyMonth">
-                <CalendarDays aria-hidden="true" size={24} strokeWidth={1.5} />
-                <strong>Este mes está libre</strong>
-                <span>Selecciona una fecha para añadir la primera tarea.</span>
-              </div>
-            ) : (
-              monthAgenda.map(({ date, items }) => (
-                <button
-                  key={date}
-                  type="button"
-                  className={`calendarAgendaDay${selectedDate === date ? " calendarAgendaDayActive" : ""}`}
-                  onClick={() => {
-                    setSelectedDate(date);
-                    setVisibleMonth(firstDayOfMonth(dateFromKey(date)));
-                  }}
-                >
-                  <span className="calendarAgendaDate">
-                    <strong>{dateFromKey(date).getDate()}</strong>
-                    <span>{formatAgendaDate(date)}</span>
-                  </span>
-                  <span className="calendarAgendaTasks">
-                    {items.map((task) => <CalendarTaskLine key={task.id} task={task} />)}
-                  </span>
-                </button>
-              ))
-            )}
-          </div>
         </Block>
 
         <div className="calendarSidebar">
@@ -341,12 +302,7 @@ export default function Calendar({ onNavigate = () => {} }) {
               />
             </label>
 
-            {selectedIsPast ? (
-              <div className="calendarPastNotice">
-                Esta fecha ya pasó. Puedes consultar sus tareas, pero no añadir nuevas.
-              </div>
-            ) : (
-              <form className="calendarQuickAdd" onSubmit={handleAddTask}>
+            <form className="calendarQuickAdd" onSubmit={handleAddTask}>
                 <label htmlFor="calendar-new-task">Nueva tarea para este día</label>
                 <input
                   id="calendar-new-task"
@@ -404,8 +360,7 @@ export default function Calendar({ onNavigate = () => {} }) {
                     {adding ? "Añadiendo..." : "Añadir al día"}
                   </button>
                 </div>
-              </form>
-            )}
+            </form>
 
             <div className="calendarSelectedTasks">
               {selectedTasks.length === 0 ? (

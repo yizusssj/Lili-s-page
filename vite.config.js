@@ -12,6 +12,7 @@ export default defineConfig({
         "favicon.ico",
         "favicon-64.png",
         "pwa-icon.svg",
+        "push-handler.js",
         "cursors/*.svg",
       ],
       manifest: {
@@ -53,6 +54,7 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
+        importScripts: ["push-handler.js"],
         navigateFallback: "/index.html",
         skipWaiting: false,
       },

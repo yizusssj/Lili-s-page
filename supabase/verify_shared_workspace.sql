@@ -1,6 +1,6 @@
 -- Ejecuta cada bloque para verificar la migración compartida.
 
--- Resultado esperado: 8 tablas y rowsecurity = true en todas.
+-- Resultado esperado con Web Push: 10 tablas y rowsecurity = true en todas.
 select tablename, rowsecurity
 from pg_tables
 where schemaname = 'public'
@@ -11,12 +11,15 @@ where schemaname = 'public'
     'notes',
     'memory_albums',
     'memories',
+    'push_subscriptions',
+    'push_reminder_deliveries',
     'today_priorities',
     'quick_notes'
   )
 order by tablename;
 
--- Resultado esperado: 32 políticas públicas, todas para authenticated.
+-- Resultado esperado con Web Push: 36 políticas públicas, todas para authenticated.
+-- push_reminder_deliveries no tiene políticas públicas: solo la service role la procesa.
 select tablename, policyname, cmd, roles
 from pg_policies
 where schemaname = 'public'
@@ -27,6 +30,8 @@ where schemaname = 'public'
     'notes',
     'memory_albums',
     'memories',
+    'push_subscriptions',
+    'push_reminder_deliveries',
     'today_priorities',
     'quick_notes'
   )
@@ -69,6 +74,22 @@ order by routine_name;
 select id, name, data_initialized_at
 from public.workspaces
 order by created_at;
+
+-- Después de 20260714020000_web_push_notifications.sql: zona horaria y 2 funciones privadas.
+select table_name, column_name, column_default
+from information_schema.columns
+where table_schema = 'public'
+  and table_name = 'workspaces'
+  and column_name = 'timezone';
+
+select routine_name, security_type
+from information_schema.routines
+where routine_schema = 'public'
+  and routine_name in (
+    'claim_due_push_reminders',
+    'register_push_subscription'
+  )
+order by routine_name;
 
 -- Después de 20260713013000_optional_memory_details.sql: is_nullable = YES.
 select table_name, column_name, is_nullable

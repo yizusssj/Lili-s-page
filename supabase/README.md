@@ -97,3 +97,20 @@ Esta migración conserva todas las tareas actuales y añade:
 - un índice para consultar pendientes, próximas y completadas con rapidez.
 
 Las tareas que ya existían quedan con prioridad media y sin fecha. La migración es aditiva y puede volver a ejecutarse sin duplicar información.
+
+## Activar notificaciones en el celular
+
+La PWA utiliza Web Push estándar. Ejecuta primero `migrations/20260714020000_web_push_notifications.sql`; crea las suscripciones privadas por dispositivo, la cola de entregas y conserva `America/Hermosillo` como zona horaria del workspace.
+
+Después completa una sola vez la configuración del servidor:
+
+1. Genera el par VAPID con `pnpm dlx web-push generate-vapid-keys --json`. La clave privada nunca se sube a Git ni se coloca en Vercel.
+2. Añade la clave pública como `VITE_VAPID_PUBLIC_KEY` en `.env.local` y en Vercel Production. Haz un nuevo deployment.
+3. Despliega `functions/send-reminders` con `supabase functions deploy send-reminders --no-verify-jwt`.
+4. Configura en Supabase los secretos `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` y `CRON_SECRET`. `VAPID_SUBJECT` debe ser un correo con formato `mailto:correo@ejemplo.com`.
+5. Copia `schedule_push_notifications.sql`, reemplaza `PROJECT_REF_HERE` y `CRON_SECRET_HERE`, y ejecútalo en SQL Editor. El job revisará los recordatorios cada minuto.
+6. En cada celular, abre la PWA instalada, entra al centro de Recordatorios y toca `Activar`.
+
+En iPhone, el permiso solo aparece desde la app añadida a la pantalla de inicio y después de tocar el botón. Cada cuenta activa o desactiva sus propios dispositivos; nunca se guarda una clave privada en el navegador.
+
+Al volver a ejecutar `verify_shared_workspace.sql` deben aparecer diez tablas con RLS y treinta y seis políticas públicas. `push_reminder_deliveries` no expone políticas a las cuentas: solamente la Edge Function puede procesar esa cola.

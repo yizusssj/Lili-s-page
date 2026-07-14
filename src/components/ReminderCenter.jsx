@@ -9,6 +9,7 @@ import {
   getUpcomingReminders,
 } from "../utils/reminders.js";
 import { useWorkspace } from "../workspace/workspaceContext.js";
+import PushNotificationSettings from "./PushNotificationSettings.jsx";
 
 export const OPEN_REMINDERS_EVENT = "lili:open-reminders";
 
@@ -139,6 +140,8 @@ export default function ReminderCenter() {
         </header>
 
         <div className="reminderPanelBody">
+          <PushNotificationSettings />
+
           {activeReminders.length > 0 && (
             <section className="reminderGroup" aria-label="Recordatorios pendientes">
               <div className="reminderGroupTitle">
@@ -177,7 +180,7 @@ export default function ReminderCenter() {
         </div>
 
         <footer className="reminderPanelFooter">
-          Estos avisos aparecen mientras estás usando la página.
+          Los avisos internos siguen disponibles aunque no actives los del celular.
         </footer>
       </section>
     </div>,

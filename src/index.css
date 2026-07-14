@@ -1168,10 +1168,6 @@ input[type="checkbox"] {
   font-weight: 680;
 }
 
-.calendarMobileAgenda {
-  display: none;
-}
-
 .calendarQuickAdd {
   padding-bottom: 13px;
   display: flex;
@@ -1232,16 +1228,6 @@ input[type="checkbox"] {
   box-shadow: var(--shadow-accent);
   font-size: 10px;
   font-weight: 720;
-}
-
-.calendarPastNotice {
-  padding: 10px 11px;
-  border: 1px solid rgba(180, 83, 9, 0.18);
-  border-radius: 12px;
-  color: #854d0e;
-  background: rgba(255, 251, 235, 0.68);
-  font-size: 10px;
-  line-height: 1.45;
 }
 
 .calendarSelectedTasks {
@@ -1427,28 +1413,6 @@ input[type="checkbox"] {
   color: var(--text-muted);
   font-size: 10px;
   text-align: center;
-}
-
-.calendarEmptyMonth {
-  min-height: 190px;
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-  text-align: center;
-}
-
-.calendarEmptyMonth strong {
-  margin-top: 10px;
-  color: var(--text-primary);
-  font-size: 13px;
-}
-
-.calendarEmptyMonth span {
-  margin-top: 4px;
-  font-size: 10px;
 }
 
 .taskPageIntro {
@@ -2238,6 +2202,91 @@ input[type="checkbox"] {
   display: flex;
   flex-direction: column;
   gap: 17px;
+}
+
+.pushSettings {
+  padding: 12px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.76);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.48);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76);
+}
+
+.pushSettingsEnabled {
+  border-color: rgba(87, 194, 221, 0.34);
+  background: linear-gradient(135deg, rgba(221, 247, 253, 0.82), rgba(255, 255, 255, 0.6));
+}
+
+.pushSettingsIcon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 12px;
+  color: #287f95;
+  background: rgba(159, 228, 245, 0.5);
+}
+
+.pushSettingsCopy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.pushSettingsCopy strong {
+  font-size: 11px;
+  font-weight: 740;
+}
+
+.pushSettingsCopy span,
+.pushSettingsCopy small {
+  color: var(--text-muted);
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+.pushSettingsCopy small {
+  color: #8a5514;
+}
+
+.pushSettingsCopy .pushSettingsError {
+  color: #9f1239;
+}
+
+.pushSettingsButton {
+  min-height: 32px;
+  padding: 7px 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.66);
+  border-radius: 10px;
+  color: #185d70;
+  background: rgba(159, 228, 245, 0.64);
+  font-size: 9px;
+  font-weight: 720;
+}
+
+.pushSettingsButton:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
+.pushSettingsSpinner {
+  animation: pushSettingsSpin 800ms linear infinite;
+}
+
+@keyframes pushSettingsSpin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .reminderGroup {
@@ -3377,59 +3426,71 @@ a[data-pin-do] {
   }
 
   .calendarDesktop {
+    display: block;
+  }
+
+  .calendarWeekdays {
+    margin-bottom: 5px;
+    gap: 3px;
+  }
+
+  .calendarWeekdays span {
+    padding: 2px 0;
+    font-size: 8px;
+    letter-spacing: 0.02em;
+  }
+
+  .calendarGrid {
+    gap: 3px;
+  }
+
+  .calendarDay {
+    min-height: 54px;
+    padding: 4px 3px;
+    align-items: center;
+    gap: 4px;
+    border-radius: 10px;
+  }
+
+  .calendarDayNumber {
+    width: 24px;
+    height: 24px;
+    border-radius: 8px;
+    font-size: 10px;
+  }
+
+  .calendarDayTasks {
+    width: 100%;
+    min-height: 7px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+  }
+
+  .calendarTaskCompact {
+    width: 6px;
+    height: 6px;
+    padding: 0;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: transparent;
+  }
+
+  .calendarTaskCompact > span:last-child,
+  .calendarMoreTasks {
     display: none;
   }
 
-  .calendarMobileAgenda {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+  .calendarTaskCompact .calendarTaskDot {
+    width: 6px;
+    height: 6px;
   }
 
-  .calendarAgendaDay {
-    width: 100%;
-    padding: 9px;
-    display: grid;
-    grid-template-columns: 58px minmax(0, 1fr);
-    gap: 11px;
-    border: 1px solid var(--control-border);
-    border-radius: 14px;
-    color: var(--text-primary);
-    background: rgba(255, 255, 255, 0.42);
-    text-align: left;
-  }
-
-  .calendarAgendaDayActive {
-    border-color: rgba(40, 127, 149, 0.38);
-    background: rgba(223, 248, 253, 0.72);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76);
-  }
-
-  .calendarAgendaDate {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    border-right: 1px solid rgba(113, 105, 119, 0.14);
-  }
-
-  .calendarAgendaDate strong {
-    font-size: 20px;
-    line-height: 1;
-  }
-
-  .calendarAgendaDate span {
-    margin-top: 5px;
-    color: var(--text-muted);
-    font-size: 8px;
-  }
-
-  .calendarAgendaTasks {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 5px;
+  .calendarDaySelected {
+    box-shadow:
+      0 5px 14px rgba(51, 160, 187, 0.11),
+      inset 0 1px 0 rgba(255, 255, 255, 0.78);
   }
 
   .calendarSidebar {
@@ -3519,6 +3580,15 @@ a[data-pin-do] {
 
   .reminderPanelBody {
     padding: 12px;
+  }
+
+  .pushSettings {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .pushSettingsButton {
+    width: 100%;
+    grid-column: 1 / -1;
   }
 
   .todayReminderBanner {

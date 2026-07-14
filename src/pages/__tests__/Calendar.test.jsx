@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { renderWithWorkspace } from "../../test/renderWithWorkspace.jsx";
@@ -64,5 +64,26 @@ describe("Calendario", () => {
 
     await user.click(screen.getByRole("button", { name: "Administrar todas las tareas" }));
     expect(onNavigate).toHaveBeenCalledWith("tasks");
+  });
+
+  it("permite registrar tareas en una fecha anterior", async () => {
+    const user = userEvent.setup();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayKey = getLocalDateKey(yesterday);
+    renderWithWorkspace(<Calendar />);
+
+    fireEvent.change(screen.getByLabelText("Elegir fecha"), {
+      target: { value: yesterdayKey },
+    });
+    await user.type(
+      screen.getByRole("textbox", { name: "Nueva tarea para este día" }),
+      "Registrar un recuerdo anterior",
+    );
+    await user.click(screen.getByRole("button", { name: "Añadir al día" }));
+
+    expect(
+      screen.getByRole("checkbox", { name: "Marcar Registrar un recuerdo anterior" }),
+    ).toBeInTheDocument();
   });
 });
