@@ -13,6 +13,10 @@ function mapTask(row) {
     dueDate: row.due_date,
     dueTime: row.due_time ? row.due_time.slice(0, 5) : null,
     priority: row.priority ?? "medium",
+    recurrence: row.recurrence ?? "once",
+    recurrenceCompletedDates: Array.isArray(row.recurrence_completed_dates)
+      ? row.recurrence_completed_dates
+      : [],
     reminderMinutesBefore: row.reminder_minutes_before,
     reminderAcknowledgedAt: row.reminder_acknowledged_at,
     createdAt: row.created_at,
@@ -20,7 +24,7 @@ function mapTask(row) {
   };
 }
 
-const TASK_SELECT = "id, text, done, due_date, due_time, priority, reminder_minutes_before, reminder_acknowledged_at, created_at, updated_at";
+const TASK_SELECT = "id, text, done, due_date, due_time, priority, recurrence, recurrence_completed_dates, reminder_minutes_before, reminder_acknowledged_at, created_at, updated_at";
 
 function mapNote(row) {
   return {
@@ -387,6 +391,8 @@ export async function insertTask(client, workspaceId, userId, task) {
       due_time: task.dueTime,
       id: task.id,
       priority: task.priority,
+      recurrence: task.recurrence ?? "once",
+      recurrence_completed_dates: task.recurrenceCompletedDates ?? [],
       reminder_acknowledged_at: task.reminderAcknowledgedAt,
       reminder_minutes_before: task.reminderMinutesBefore,
       text: task.text,

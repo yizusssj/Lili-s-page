@@ -86,4 +86,41 @@ describe("Calendario", () => {
       screen.getByRole("checkbox", { name: "Marcar Registrar un recuerdo anterior" }),
     ).toBeInTheDocument();
   });
+
+  it("repite una tarea mensualmente sin completar toda la serie", async () => {
+    const user = userEvent.setup();
+    const origin = new Date();
+    const originKey = getLocalDateKey(origin);
+    const nextMonth = new Date(origin.getFullYear(), origin.getMonth() + 1, origin.getDate());
+    const nextMonthKey = getLocalDateKey(nextMonth);
+    const followingMonth = new Date(origin.getFullYear(), origin.getMonth() + 2, origin.getDate());
+    const followingMonthKey = getLocalDateKey(followingMonth);
+    renderWithWorkspace(<Calendar />);
+
+    expect(screen.getByLabelText("Solo esta fecha")).toBeChecked();
+    await user.click(screen.getByLabelText("Cada mes siempre"));
+    expect(screen.getByText(/sin fecha final/i)).toBeInTheDocument();
+    await user.type(
+      screen.getByRole("textbox", { name: "Nueva tarea para este día" }),
+      "Regar las plantas",
+    );
+    await user.click(screen.getByRole("button", { name: "Añadir al día" }));
+
+    expect(screen.getByRole("checkbox", { name: "Marcar Regar las plantas" }))
+      .toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Elegir fecha"), {
+      target: { value: nextMonthKey },
+    });
+    await user.click(screen.getByRole("checkbox", { name: "Marcar Regar las plantas" }));
+    expect(screen.getByRole("checkbox", { name: "Desmarcar Regar las plantas" }))
+      .toBeChecked();
+
+    fireEvent.change(screen.getByLabelText("Elegir fecha"), {
+      target: { value: followingMonthKey },
+    });
+    expect(screen.getByRole("checkbox", { name: "Marcar Regar las plantas" }))
+      .not.toBeChecked();
+    expect(originKey).not.toBe(nextMonthKey);
+  });
 });

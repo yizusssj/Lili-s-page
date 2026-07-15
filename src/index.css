@@ -37,6 +37,1615 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
+/* Arcade */
+.arcadePage {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.arcadeHero,
+.arcadeLibrary,
+.blockGameShell {
+  border: 1px solid var(--glass-border);
+  background: var(--glass-card);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+}
+
+.arcadeHero {
+  min-height: 260px;
+  padding: 34px 38px;
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 310px;
+  align-items: center;
+  gap: 28px;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 82% 18%, rgba(159, 228, 245, 0.62), transparent 33%),
+    radial-gradient(circle at 62% 82%, rgba(196, 181, 253, 0.34), transparent 38%),
+    rgba(255, 255, 255, 0.43);
+}
+
+.arcadeHero::after {
+  content: "";
+  width: 190px;
+  height: 190px;
+  position: absolute;
+  right: 26%;
+  bottom: -125px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.72);
+  filter: blur(3px);
+}
+
+.arcadeHeroContent {
+  position: relative;
+  z-index: 2;
+}
+
+.arcadeEyebrow,
+.arcadeHeroFeatures,
+.arcadeHeroFeatures span,
+.arcadeGameStatus,
+.blockGameOfflineBadge,
+.blockGameHelp > span,
+.blockGameBestMetric > span {
+  display: inline-flex;
+  align-items: center;
+}
+
+.arcadeEyebrow {
+  gap: 7px;
+  color: #6650b8;
+  font-size: 12px;
+  font-weight: 760;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.arcadeHero h2 {
+  max-width: 600px;
+  margin: 13px 0 10px;
+  color: var(--text-primary);
+  font-size: clamp(30px, 4vw, 48px);
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+}
+
+.arcadeHero p {
+  max-width: 590px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.arcadeHeroFeatures {
+  margin-top: 22px;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.arcadeHeroFeatures span {
+  min-height: 34px;
+  padding: 7px 11px;
+  gap: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.42);
+  color: #525263;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76);
+  font-size: 11px;
+  font-weight: 680;
+}
+
+.arcadeHeroArt {
+  width: 250px;
+  height: 210px;
+  position: relative;
+  z-index: 1;
+  justify-self: center;
+  display: grid;
+  place-items: center;
+}
+
+.arcadeMoon {
+  width: 126px;
+  height: 126px;
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 42px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(208, 243, 252, 0.64));
+  color: #634ec0;
+  box-shadow:
+    0 30px 70px rgba(77, 69, 145, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  transform: rotate(-7deg);
+}
+
+.arcadeOrbit {
+  position: absolute;
+  border: 1px solid rgba(103, 84, 179, 0.2);
+  border-radius: 50%;
+  transform: rotate(-18deg);
+}
+
+.arcadeOrbitOne {
+  width: 230px;
+  height: 104px;
+}
+
+.arcadeOrbitTwo {
+  width: 178px;
+  height: 178px;
+}
+
+.arcadeLibrary {
+  padding: 22px;
+  border-radius: 26px;
+}
+
+.arcadeLibraryHeading {
+  margin-bottom: 17px;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.arcadeLibraryHeading span {
+  color: #6d5bb0;
+  font-size: 11px;
+  font-weight: 740;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.arcadeLibraryHeading h2 {
+  margin: 4px 0 0;
+  font-size: 21px;
+  letter-spacing: -0.025em;
+}
+
+.arcadeLibraryHeading small {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.arcadeGameGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.arcadeGameCard {
+  min-width: 0;
+  min-height: 250px;
+  padding: 12px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 21px;
+  background: rgba(255, 255, 255, 0.35);
+  color: var(--text-primary);
+  box-shadow:
+    0 13px 32px rgba(75, 49, 91, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  text-align: left;
+}
+
+.arcadeGameCard:disabled {
+  color: var(--text-primary);
+  cursor: default;
+  opacity: 0.68;
+}
+
+.arcadeGameCardAvailable {
+  cursor: pointer;
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  animation: arcadeCardArrive 420ms both cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.arcadeGameCardAvailable:nth-child(2) {
+  animation-delay: 70ms;
+}
+
+.arcadeGameCardAvailable:hover {
+  border-color: color-mix(in srgb, var(--game-accent) 35%, white);
+  box-shadow:
+    0 18px 42px color-mix(in srgb, var(--game-accent) 15%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86);
+  transform: translateY(-3px);
+}
+
+.arcadeGameArtwork {
+  min-height: 122px;
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  border-radius: 15px;
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--game-accent) 18%, white), rgba(255, 255, 255, 0.38));
+  color: var(--game-accent);
+}
+
+.arcadeGameGlow {
+  width: 96px;
+  height: 96px;
+  position: absolute;
+  border-radius: 31px;
+  background: color-mix(in srgb, var(--game-accent) 22%, transparent);
+  filter: blur(20px);
+  transform: rotate(16deg);
+}
+
+.arcadeGameArtwork svg {
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 8px 15px color-mix(in srgb, var(--game-accent) 25%, transparent));
+}
+
+.arcadeGameCopy {
+  min-width: 0;
+  padding: 14px 5px 3px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.arcadeGameStatus {
+  gap: 4px;
+  color: var(--game-accent);
+  font-size: 9px;
+  font-weight: 780;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.arcadeGameCopy strong {
+  font-size: 16px;
+  letter-spacing: -0.015em;
+}
+
+.arcadeGameCopy > span:last-child {
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.arcadeGameAction {
+  width: 34px;
+  height: 34px;
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--game-accent);
+}
+
+.blockGameShell {
+  padding: 20px;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 22% 14%, rgba(159, 228, 245, 0.25), transparent 28%),
+    radial-gradient(circle at 84% 76%, rgba(196, 181, 253, 0.22), transparent 34%),
+    rgba(255, 255, 255, 0.42);
+}
+
+.blockGameToolbar,
+.blockGameToolbarActions {
+  display: flex;
+  align-items: center;
+}
+
+.blockGameToolbar {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.blockGameToolbarActions {
+  gap: 8px;
+}
+
+.arcadeBackButton,
+.blockGamePauseButton {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  background: rgba(255, 255, 255, 0.44);
+  color: var(--text-primary);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  cursor: pointer;
+}
+
+.arcadeBackButton {
+  padding: 8px 12px;
+  gap: 7px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 680;
+}
+
+.blockGamePauseButton {
+  width: 38px;
+  padding: 0;
+  border-radius: 12px;
+  color: #6753b3;
+}
+
+.blockGamePauseButton:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.blockGameOfflineBadge {
+  min-height: 30px;
+  padding: 6px 10px;
+  border: 1px solid rgba(43, 138, 107, 0.16);
+  border-radius: 999px;
+  background: rgba(222, 250, 240, 0.65);
+  color: #207459;
+  font-size: 9px;
+  font-weight: 760;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.blockGameHeading {
+  margin: 24px auto 20px;
+  text-align: center;
+}
+
+.blockGameHeading > span {
+  color: #715ac1;
+  font-size: 10px;
+  font-weight: 770;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.blockGameHeading h2 {
+  margin: 5px 0 4px;
+  font-size: 28px;
+  letter-spacing: -0.035em;
+}
+
+.blockGameHeading p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.gameDifficultyPicker {
+  width: min(100%, 570px);
+  min-height: 50px;
+  margin: 0 auto 18px;
+  padding: 5px 6px 5px 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  border-radius: 17px;
+  background: rgba(255, 255, 255, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.gameDifficultyLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #625a73;
+  font-size: 10px;
+  font-weight: 740;
+  letter-spacing: 0.02em;
+}
+
+.gameDifficultyOptions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.gameDifficultyOptions button {
+  min-width: 78px;
+  min-height: 38px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 720;
+  transition: background 160ms ease, box-shadow 160ms ease, color 160ms ease;
+}
+
+.gameDifficultyOptions button:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.48);
+}
+
+.gameDifficultyOptions .gameDifficultyActive {
+  background: linear-gradient(145deg, rgba(159, 228, 245, 0.9), rgba(203, 188, 255, 0.75));
+  color: #2d3450;
+  box-shadow:
+    0 7px 17px rgba(72, 78, 129, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+.gameDifficultyOptions button:disabled {
+  cursor: default;
+  opacity: 0.62;
+}
+
+.blockGameLayout {
+  display: grid;
+  grid-template-columns: minmax(280px, 350px) 220px;
+  justify-content: center;
+  align-items: start;
+  gap: 18px;
+}
+
+.blockGameStage {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.blockGameBoard {
+  width: min(100%, 340px);
+  aspect-ratio: 1 / 2;
+  padding: 7px;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  grid-template-rows: repeat(20, minmax(0, 1fr));
+  gap: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.17);
+  border-radius: 20px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.024) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.024) 1px, transparent 1px),
+    linear-gradient(160deg, #171827, #10111c 66%, #191426);
+  background-size: 10% 5%, 10% 5%, auto;
+  box-shadow:
+    0 24px 54px rgba(34, 26, 62, 0.27),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.blockGameCell {
+  min-width: 0;
+  min-height: 0;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.blockGameCellI,
+.blockGameCellO,
+.blockGameCellT,
+.blockGameCellS,
+.blockGameCellZ,
+.blockGameCellJ,
+.blockGameCellL {
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow:
+    inset 0 2px 3px rgba(255, 255, 255, 0.42),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.13),
+    0 0 8px rgba(255, 255, 255, 0.08);
+  animation: blockCellEnter 130ms cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+
+.blockGameCellI { background: #58d9ec; }
+.blockGameCellO { background: #ffd76a; }
+.blockGameCellT { background: #a77cf5; }
+.blockGameCellS { background: #69db91; }
+.blockGameCellZ { background: #ff7b8d; }
+.blockGameCellJ { background: #6b9fff; }
+.blockGameCellL { background: #ffad61; }
+
+.blockGameCellGhost {
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: none;
+  opacity: 0.55;
+}
+
+.blockGameCellClearing {
+  position: relative;
+  z-index: 2;
+  animation: blockCellDissolve 205ms var(--cell-clear-delay) cubic-bezier(0.2, 0.86, 0.25, 1) both;
+}
+
+.blockGameBoardClearing {
+  animation: blockBoardImpact 240ms ease-out both;
+}
+
+.blockGameBoardEffect {
+  position: absolute;
+  inset: 7px;
+  z-index: 3;
+  overflow: hidden;
+  border-radius: 14px;
+  pointer-events: none;
+}
+
+.blockGameLandEffect {
+  border: 1px solid rgba(159, 228, 245, 0.5);
+  animation: blockBoardLand 320ms ease-out both;
+}
+
+.blockGameCollapseEffect {
+  background:
+    linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgba(159, 228, 245, 0.04) 34%,
+      rgba(159, 228, 245, 0.23) 48%,
+      rgba(255, 255, 255, 0.12) 54%,
+      transparent 72%
+    );
+  background-size: 100% 190%;
+  animation: blockBoardCollapse 190ms ease-out both;
+}
+
+.blockGameClearEffect {
+  display: grid;
+  place-items: center;
+  background:
+    linear-gradient(
+      to bottom,
+      transparent 0%,
+      transparent 42%,
+      rgba(255, 255, 255, 0.08) 46%,
+      rgba(159, 228, 245, 0.78) 50%,
+      rgba(203, 188, 255, 0.44) 54%,
+      transparent 59%,
+      transparent 100%
+    );
+  background-size: 100% 220%;
+  animation: blockLineSweep 250ms ease-out both;
+}
+
+.blockGameClearEffect > span {
+  position: relative;
+  z-index: 3;
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  border-radius: 999px;
+  background: rgba(15, 17, 30, 0.7);
+  color: #e9fbff;
+  box-shadow: 0 9px 26px rgba(0, 0, 0, 0.26);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  animation: blockClearLabel 235ms ease-out both;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.blockGameClearRow {
+  width: 100%;
+  height: calc(5% - 1px);
+  position: absolute;
+  top: calc(var(--clear-row) * 5%);
+  left: 0;
+  z-index: 1;
+  display: block;
+  border-radius: 5px;
+  background:
+    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.96) 45%, #9fe4f5 54%, transparent),
+    rgba(159, 228, 245, 0.22);
+  box-shadow:
+    0 0 13px rgba(159, 228, 245, 0.8),
+    inset 0 0 8px rgba(255, 255, 255, 0.82);
+  animation: blockClearRowBurst 220ms var(--clear-delay) cubic-bezier(0.15, 0.86, 0.2, 1) both;
+}
+
+.blockGameClearSpark {
+  width: 4px;
+  height: 4px;
+  position: absolute;
+  top: var(--spark-y);
+  left: var(--spark-x);
+  z-index: 2;
+  display: block;
+  border-radius: 50%;
+  background: #effdff;
+  box-shadow: 0 0 8px #9fe4f5;
+  animation: blockClearSpark 225ms var(--spark-delay) ease-out both;
+}
+
+.blockGameOverlay {
+  position: absolute;
+  inset: 7px;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border-radius: 14px;
+  background: rgba(14, 15, 27, 0.72);
+  color: #fff;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  text-align: center;
+}
+
+.blockGameOverlay > svg {
+  color: #b9adff;
+}
+
+.blockGameOverlay strong {
+  font-size: 18px;
+}
+
+.blockGameOverlay span {
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 11px;
+}
+
+.blockGameOverlay button {
+  min-height: 42px;
+  margin-top: 3px;
+  padding: 9px 15px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 13px;
+  background: linear-gradient(135deg, #9fe4f5, #c8b9ff);
+  color: #25213a;
+  box-shadow: 0 12px 28px rgba(86, 68, 158, 0.3);
+  cursor: pointer;
+  font-weight: 760;
+}
+
+.blockGameControls {
+  width: min(100%, 340px);
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+  touch-action: none;
+}
+
+.blockGameControls button {
+  min-width: 0;
+  height: 49px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.64);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.48);
+  color: #4e4b61;
+  box-shadow:
+    0 8px 18px rgba(75, 49, 91, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88);
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: transform 90ms ease, background 120ms ease, box-shadow 120ms ease;
+}
+
+.blockGameControls button:active {
+  background: rgba(159, 228, 245, 0.66);
+  box-shadow: inset 0 2px 5px rgba(56, 84, 105, 0.14);
+  transform: translateY(1px);
+}
+
+.blockGameControls .blockGameDropButton {
+  background: linear-gradient(145deg, rgba(159, 228, 245, 0.76), rgba(200, 185, 255, 0.62));
+  color: #3d3564;
+}
+
+.blockGamePanel {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.blockGameMetrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.blockGameMetric,
+.blockGameNext,
+.blockGameHelp {
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  background: rgba(255, 255, 255, 0.37);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.blockGameMetric {
+  min-height: 72px;
+  padding: 11px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-radius: 15px;
+}
+
+.blockGameMetric span,
+.blockGameNext > span {
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 690;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.blockGameMetric strong {
+  color: var(--text-primary);
+  font-size: 20px;
+  letter-spacing: -0.035em;
+}
+
+.blockGameMetricValue {
+  animation: metricValueBump 220ms ease-out both;
+}
+
+.blockGameBestMetric {
+  background: linear-gradient(145deg, rgba(255, 246, 198, 0.58), rgba(255, 255, 255, 0.36));
+}
+
+.blockGameBestMetric > span {
+  gap: 4px;
+  color: #8b6914;
+}
+
+.blockGameNext {
+  padding: 13px;
+  border-radius: 17px;
+}
+
+.blockGamePreview {
+  width: 104px;
+  height: 104px;
+  margin: 10px auto 2px;
+  padding: 8px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: 3px;
+  border-radius: 16px;
+  background: rgba(22, 23, 38, 0.92);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.blockGameHelp {
+  padding: 12px;
+  border-radius: 15px;
+}
+
+.blockGameHelp > span {
+  gap: 6px;
+  color: #6650b0;
+  font-size: 10px;
+  font-weight: 740;
+}
+
+.blockGameHelp p {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.sandGameShell {
+  background:
+    radial-gradient(circle at 19% 12%, rgba(97, 217, 232, 0.27), transparent 27%),
+    radial-gradient(circle at 84% 73%, rgba(170, 130, 245, 0.24), transparent 34%),
+    rgba(255, 255, 255, 0.42);
+}
+
+.sandGameHeading > span {
+  color: #287f8e;
+}
+
+.sandGameCanvasFrame {
+  width: min(100%, 340px);
+  aspect-ratio: 1 / 2;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 50% 108%, rgba(116, 91, 185, 0.18), transparent 35%),
+    linear-gradient(165deg, #121522, #090b13 68%, #11101d);
+  box-shadow:
+    0 26px 58px rgba(32, 27, 54, 0.31),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 0 42px rgba(77, 70, 135, 0.08);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.sandGameCanvasFrame::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.014) 1px, transparent 1px);
+  background-size: 10% 5%;
+}
+
+.sandGameCanvasFrame::after {
+  content: "";
+  width: 46%;
+  height: 135%;
+  position: absolute;
+  top: -18%;
+  left: -68%;
+  z-index: 3;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.045), transparent);
+  transform: skewX(-16deg);
+  animation: sandBoardSheen 5.8s 1.2s ease-in-out infinite;
+}
+
+.sandGameCanvas {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  z-index: 2;
+  display: block;
+  image-rendering: pixelated;
+  touch-action: none;
+}
+
+.sandGameCombo {
+  position: absolute;
+  top: 13px;
+  left: 50%;
+  z-index: 6;
+  padding: 5px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  background: rgba(21, 22, 36, 0.62);
+  color: #fff0a9;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  transform: translateX(-50%);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  animation: sandComboPop 650ms ease-out both;
+}
+
+.sandGameOverlay {
+  inset: 0;
+  z-index: 7;
+  border-radius: 19px;
+  background: rgba(9, 11, 19, 0.7);
+}
+
+.sandGameOverlay > svg {
+  color: #71ddec;
+}
+
+.sandGamePathBurst,
+.sandGameLandPulse {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.sandGamePathBurst {
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  border-radius: 19px;
+  background:
+    radial-gradient(circle at center, rgba(97, 217, 232, 0.34), transparent 33%),
+    linear-gradient(to bottom, transparent 43%, rgba(255, 255, 255, 0.68) 50%, transparent 57%);
+  animation: sandPathFlash 780ms ease-out both;
+}
+
+.sandGamePathBurst::before,
+.sandGamePathBurst::after {
+  content: "";
+  width: 42%;
+  height: 2px;
+  position: absolute;
+  top: 50%;
+  z-index: 1;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, #ffffff, #61d9e8);
+  box-shadow: 0 0 14px rgba(97, 217, 232, 0.95);
+}
+
+.sandGamePathBurst::before {
+  left: -45%;
+  animation: sandConnectBeamLeft 520ms 40ms ease-out both;
+}
+
+.sandGamePathBurst::after {
+  right: -45%;
+  background: linear-gradient(90deg, #61d9e8, #ffffff, transparent);
+  animation: sandConnectBeamRight 520ms 40ms ease-out both;
+}
+
+.sandGamePathBurst > i {
+  width: 5px;
+  height: 5px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  display: block;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow:
+    0 0 8px rgba(255, 255, 255, 0.9),
+    0 0 14px rgba(97, 217, 232, 0.82);
+  animation: sandBurstParticle 700ms var(--burst-delay) ease-out both;
+}
+
+.sandGamePathBurst > span {
+  position: relative;
+  z-index: 3;
+  padding: 7px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 999px;
+  background: rgba(13, 17, 28, 0.7);
+  color: #eaffff;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
+  font-size: 10px;
+  font-weight: 820;
+  letter-spacing: 0.03em;
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+}
+
+.sandGameLandPulse {
+  z-index: 4;
+  border-radius: 19px;
+  box-shadow: inset 0 -16px 28px rgba(97, 217, 232, 0.18);
+  animation: sandLandPulse 360ms ease-out both;
+}
+
+.sandGameNext {
+  min-height: 145px;
+}
+
+.sandGamePreview {
+  width: 104px;
+  height: 104px;
+  margin: 10px auto 2px;
+  padding: 8px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: 3px;
+  border-radius: 16px;
+  background: rgba(18, 20, 32, 0.94);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.sandGamePreview > span {
+  border-radius: 3px;
+}
+
+.sandGamePreviewActive {
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow:
+    inset 0 2px 3px rgba(255, 255, 255, 0.42),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.14);
+}
+
+@keyframes arcadeCardArrive {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes blockCellEnter {
+  from {
+    filter: brightness(1.3);
+    transform: scale(0.78);
+  }
+  to {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+}
+
+@keyframes blockBoardLand {
+  0% {
+    opacity: 0.85;
+    box-shadow: inset 0 -30px 38px rgba(159, 228, 245, 0.28);
+    transform: translateY(-1px);
+  }
+  100% {
+    opacity: 0;
+    box-shadow: inset 0 0 0 rgba(159, 228, 245, 0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes blockBoardImpact {
+  0% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+  24% {
+    filter: brightness(1.14);
+    transform: scale(1.006) translateX(-1px);
+  }
+  48% {
+    transform: scale(1.003) translateX(1px);
+  }
+  100% {
+    filter: brightness(1);
+    transform: scale(1) translateX(0);
+  }
+}
+
+@keyframes blockCellDissolve {
+  0% {
+    opacity: 1;
+    filter: brightness(1);
+    transform: scale(1);
+  }
+  26% {
+    opacity: 1;
+    filter: brightness(1.65) saturate(0.72);
+    transform: scale(1.08);
+  }
+  52% {
+    opacity: 1;
+    filter: brightness(2.15) saturate(0.35);
+    transform: scale(0.96);
+  }
+  100% {
+    opacity: 0;
+    filter: brightness(2.4) saturate(0);
+    transform: translateY(-6px) scale(0.12) rotate(4deg);
+  }
+}
+
+@keyframes blockBoardCollapse {
+  0% {
+    opacity: 0;
+    background-position: 0 -80%;
+    transform: translateY(-3px);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    background-position: 0 100%;
+    transform: translateY(0);
+  }
+}
+
+@keyframes blockLineSweep {
+  0% {
+    opacity: 0;
+    background-position: 0 -90%;
+  }
+  22% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    background-position: 0 100%;
+  }
+}
+
+@keyframes blockClearRowBurst {
+  0% {
+    opacity: 0;
+    transform: scaleX(0.06);
+  }
+  32% {
+    opacity: 1;
+    transform: scaleX(1.04);
+  }
+  64% {
+    opacity: 0.9;
+    transform: scaleX(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scaleX(1.08);
+  }
+}
+
+@keyframes blockClearLabel {
+  0% {
+    opacity: 0;
+    transform: scale(0.72);
+  }
+  34% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  72% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-5px) scale(0.94);
+  }
+}
+
+@keyframes blockClearSpark {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.2);
+  }
+  24% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.3);
+  }
+  100% {
+    opacity: 0;
+    transform:
+      translate(
+        calc(-50% + var(--spark-drift-x)),
+        calc(-50% + var(--spark-drift-y))
+      )
+      scale(0.35);
+  }
+}
+
+@keyframes gameScorePop {
+  0% {
+    opacity: 0;
+    transform: translateY(7px) scale(0.72);
+  }
+  35% {
+    opacity: 1;
+    transform: translateY(0) scale(1.08);
+  }
+  76% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-9px) scale(0.96);
+  }
+}
+
+@keyframes metricValueBump {
+  from {
+    color: #318ea1;
+    transform: translateY(2px) scale(0.9);
+  }
+  to {
+    color: var(--text-primary);
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes sandComboPop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 7px) scale(0.72);
+  }
+  35% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1.08);
+  }
+  76% {
+    opacity: 1;
+    transform: translate(-50%, -2px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -9px) scale(0.96);
+  }
+}
+
+@keyframes sandBoardSheen {
+  0%, 68% {
+    left: -68%;
+    opacity: 0;
+  }
+  74% {
+    opacity: 1;
+  }
+  100% {
+    left: 122%;
+    opacity: 0;
+  }
+}
+
+@keyframes sandPathFlash {
+  0% {
+    opacity: 0;
+    clip-path: inset(49% 0 49% 0 round 18px);
+  }
+  24% {
+    opacity: 1;
+    clip-path: inset(0 0 0 0 round 18px);
+  }
+  100% {
+    opacity: 0;
+    clip-path: inset(0 0 0 0 round 18px);
+  }
+}
+
+@keyframes sandConnectBeamLeft {
+  from {
+    left: -45%;
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+  to {
+    left: 29%;
+    opacity: 0;
+  }
+}
+
+@keyframes sandConnectBeamRight {
+  from {
+    right: -45%;
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+  to {
+    right: 29%;
+    opacity: 0;
+  }
+}
+
+@keyframes sandBurstParticle {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--burst-angle)) translateX(0) scale(0.3);
+  }
+  22% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(var(--burst-angle)) translateX(5px) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform:
+      translate(-50%, -50%)
+      rotate(var(--burst-angle))
+      translateX(var(--burst-distance))
+      scale(0.2);
+  }
+}
+
+@keyframes sandLandPulse {
+  from {
+    opacity: 1;
+    transform: scale(0.992);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.012);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arcadeGameCardAvailable,
+  .blockGameCellI,
+  .blockGameCellO,
+  .blockGameCellT,
+  .blockGameCellS,
+  .blockGameCellZ,
+  .blockGameCellJ,
+  .blockGameCellL,
+  .blockGameCellClearing,
+  .blockGameBoardClearing,
+  .blockGameMetricValue,
+  .sandGameCombo,
+  .blockGameClearEffect > span {
+    animation: none;
+  }
+
+  .blockGameBoardEffect,
+  .sandGameCanvasFrame::after,
+  .sandGamePathBurst,
+  .sandGameLandPulse {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .arcadeHero {
+    min-height: 240px;
+    grid-template-columns: minmax(0, 1fr) 230px;
+  }
+
+  .arcadeHeroArt {
+    width: 210px;
+  }
+
+  .blockGameLayout {
+    grid-template-columns: minmax(280px, 350px);
+  }
+
+  .blockGamePanel {
+    width: min(100%, 520px);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .blockGameMetrics {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .blockGameNext {
+    grid-row: span 2;
+  }
+
+  .sandGameNext {
+    grid-row: span 2;
+  }
+}
+
+@media (max-width: 720px) {
+  .arcadeHero {
+    padding: 27px;
+    grid-template-columns: 1fr;
+  }
+
+  .arcadeHeroArt {
+    display: none;
+  }
+
+  .arcadeGameGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .arcadeGameCard {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 112px minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .arcadeGameArtwork {
+    min-height: 112px;
+  }
+
+  .arcadeGameCopy {
+    padding: 8px 42px 8px 13px;
+  }
+}
+
+@media (max-width: 520px) {
+  .arcadeHero,
+  .arcadeLibrary,
+  .blockGameShell {
+    border-radius: 22px;
+  }
+
+  .arcadeHero {
+    min-height: 0;
+    padding: 23px 20px;
+  }
+
+  .arcadeHero h2 {
+    margin-top: 10px;
+    font-size: 31px;
+  }
+
+  .arcadeHeroFeatures {
+    margin-top: 17px;
+  }
+
+  .arcadeHeroFeatures span {
+    min-height: 30px;
+    padding: 6px 8px;
+    font-size: 9px;
+  }
+
+  .arcadeLibrary {
+    padding: 16px;
+  }
+
+  .arcadeLibraryHeading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .arcadeGameCard {
+    grid-template-columns: 92px minmax(0, 1fr);
+    border-radius: 17px;
+  }
+
+  .arcadeGameArtwork {
+    min-height: 92px;
+  }
+
+  .arcadeGameCopy strong {
+    font-size: 14px;
+  }
+
+  .arcadeGameCopy > span:last-child {
+    font-size: 10px;
+  }
+
+  .blockGameShell {
+    padding: 13px;
+  }
+
+  .blockGameOfflineBadge {
+    display: none;
+  }
+
+  .arcadeBackButton {
+    padding: 8px 10px;
+  }
+
+  .blockGameHeading {
+    margin: 19px auto 15px;
+  }
+
+  .blockGameHeading h2 {
+    font-size: 24px;
+  }
+
+  .blockGameHeading p {
+    padding: 0 10px;
+    font-size: 10px;
+  }
+
+  .gameDifficultyPicker {
+    min-height: 46px;
+    margin-bottom: 14px;
+    padding: 4px;
+    gap: 4px;
+  }
+
+  .gameDifficultyLabel {
+    padding-left: 7px;
+    font-size: 9px;
+  }
+
+  .gameDifficultyOptions {
+    flex: 1;
+  }
+
+  .gameDifficultyOptions button {
+    min-width: 0;
+    min-height: 36px;
+    padding: 6px 7px;
+    font-size: 9px;
+  }
+
+  .blockGameLayout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .blockGameBoard,
+  .blockGameControls,
+  .sandGameCanvasFrame {
+    width: min(100%, 310px);
+  }
+
+  .blockGameControls button {
+    height: 47px;
+    border-radius: 14px;
+  }
+
+  .blockGamePanel {
+    width: 100%;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .blockGameMetrics {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .blockGameMetric {
+    min-height: 60px;
+    padding: 8px 6px;
+    border-radius: 12px;
+  }
+
+  .blockGameMetric span {
+    font-size: 7px;
+  }
+
+  .blockGameMetric strong {
+    font-size: 15px;
+  }
+
+  .blockGameBestMetric > span svg {
+    display: none;
+  }
+
+  .blockGameNext {
+    padding: 10px;
+  }
+
+  .blockGamePreview {
+    width: 88px;
+    height: 88px;
+    margin-top: 7px;
+  }
+
+  .sandGameNext {
+    min-height: 0;
+  }
+
+  .sandGamePreview {
+    width: 88px;
+    height: 88px;
+    margin-top: 7px;
+  }
+
+  .blockGameHelp {
+    padding: 10px;
+  }
+
+  .blockGameKeyboardHelp {
+    display: none;
+  }
+}
+
+@media (max-width: 370px) {
+  .blockGameBoard,
+  .blockGameControls,
+  .sandGameCanvasFrame {
+    width: min(100%, 286px);
+  }
+
+  .gameDifficultyLabel {
+    width: 30px;
+    padding-left: 8px;
+    overflow: hidden;
+    color: #625a73;
+    font-size: 0;
+  }
+}
+
 *,
 *::before,
 *::after {
@@ -1216,6 +2825,87 @@ input[type="checkbox"] {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.calendarRecurrence {
+  min-width: 0;
+  margin: 2px 0 1px;
+  padding: 8px;
+  border: 1px solid rgba(40, 127, 149, 0.13);
+  border-radius: 13px;
+  background: rgba(224, 247, 252, 0.24);
+}
+
+.calendarRecurrence legend {
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #287f95;
+  font-size: 9px;
+  font-weight: 750;
+}
+
+.calendarRecurrence legend small {
+  color: var(--text-muted);
+  font-size: 7px;
+  font-weight: 650;
+}
+
+.calendarRecurrenceOptions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.calendarRecurrenceOptions label {
+  min-width: 0;
+  min-height: 39px;
+  position: relative;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.42);
+  color: var(--text-secondary);
+  cursor: pointer;
+  text-align: center;
+}
+
+.calendarRecurrenceOptions input {
+  width: 1px;
+  height: 1px;
+  position: absolute;
+  opacity: 0;
+}
+
+.calendarRecurrenceOptions span {
+  padding: 5px 3px;
+  font-size: 8px;
+  font-weight: 680;
+  line-height: 1.25;
+}
+
+.calendarRecurrenceOptions label:has(input:focus-visible) {
+  outline: 2px solid rgba(40, 127, 149, 0.42);
+  outline-offset: 1px;
+}
+
+.calendarRecurrenceOptions .calendarRecurrenceActive {
+  border-color: rgba(40, 127, 149, 0.2);
+  background: linear-gradient(145deg, rgba(159, 228, 245, 0.76), rgba(220, 211, 255, 0.62));
+  color: #265f71;
+  box-shadow:
+    0 5px 12px rgba(40, 127, 149, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+.calendarRecurrence > p {
+  margin: 6px 2px 0;
+  color: var(--text-muted);
+  font-size: 8px;
+  line-height: 1.35;
+  text-align: center;
+}
+
 .calendarQuickActions {
   grid-template-columns: minmax(0, 1fr) auto;
 }
@@ -1289,6 +2979,10 @@ input[type="checkbox"] {
   gap: 3px;
   color: var(--text-muted);
   font-size: 8px;
+}
+
+.calendarSelectedMeta .calendarRecurrenceMeta {
+  color: #287f95;
 }
 
 .calendarSelectedTask:has(input:checked) .calendarSelectedCopy > strong {
@@ -3325,7 +5019,7 @@ a[data-pin-do] {
 
   .appHeader {
     margin: 0 12px !important;
-    top: 12px !important;
+    top: auto !important;
   }
 
   .content {

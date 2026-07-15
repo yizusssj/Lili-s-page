@@ -10,6 +10,7 @@ import {
   Clock3,
   Flag,
   Plus,
+  Repeat2,
 } from "lucide-react";
 import { styles } from "../app/styles.jsx";
 import Block from "../components/Block.jsx";
@@ -20,6 +21,14 @@ import {
   formatTaskTime,
   REMINDER_OPTIONS,
 } from "../utils/reminders.js";
+import {
+  getTaskRecurrenceLabel,
+  getUpcomingTaskOccurrences,
+  groupTaskOccurrences,
+  normalizeTaskRecurrence,
+  TASK_RECURRENCE,
+  TASK_RECURRENCE_OPTIONS,
+} from "../utils/taskRecurrence.js";
 import { useWorkspace } from "../workspace/workspaceContext.js";
 
 const WEEKDAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
@@ -117,12 +126,18 @@ function CalendarTaskLine({ compact = false, task }) {
 }
 
 export default function Calendar({ onNavigate = () => {} }) {
-  const { addTask, tasks, toggleTask } = useWorkspace();
+  const {
+    addTask,
+    tasks,
+    toggleTask,
+    toggleTaskOccurrence,
+  } = useWorkspace();
   const [visibleMonth, setVisibleMonth] = useState(() => firstDayOfMonth(new Date()));
   const [selectedDate, setSelectedDate] = useState(() => getLocalDateKey());
   const [newTask, setNewTask] = useState("");
   const [newDueTime, setNewDueTime] = useState("");
   const [newPriority, setNewPriority] = useState("medium");
+  const [newRecurrence, setNewRecurrence] = useState(TASK_RECURRENCE.once);
   const [newReminder, setNewReminder] = useState("");
   const [adding, setAdding] = useState(false);
   const today = getLocalDateKey();
@@ -132,26 +147,30 @@ export default function Calendar({ onNavigate = () => {} }) {
     [tasks],
   );
 
+  const monthDays = useMemo(() => buildMonthDays(visibleMonth), [visibleMonth]);
+  const calendarDateKeys = useMemo(
+    () => [...new Set([...monthDays.map((day) => day.key), selectedDate])],
+    [monthDays, selectedDate],
+  );
   const tasksByDate = useMemo(() => {
-    const grouped = new Map();
-    datedTasks.forEach((task) => {
-      const current = grouped.get(task.dueDate) ?? [];
-      current.push(task);
-      grouped.set(task.dueDate, current);
+    const grouped = groupTaskOccurrences(datedTasks, calendarDateKeys);
+    grouped.forEach((dayTasks) => {
+      dayTasks.sort(sortDatedTasks);
     });
     return grouped;
-  }, [datedTasks]);
+  }, [calendarDateKeys, datedTasks]);
 
-  const monthDays = useMemo(() => buildMonthDays(visibleMonth), [visibleMonth]);
   const selectedTasks = tasksByDate.get(selectedDate) ?? [];
 
   const upcomingTasks = useMemo(
-    () => datedTasks.filter((task) => !task.done && task.dueDate >= today).slice(0, 6),
+    () => getUpcomingTaskOccurrences(datedTasks, today, 6),
     [datedTasks, today],
   );
 
   const overdueCount = datedTasks.filter(
-    (task) => !task.done && task.dueDate < today,
+    (task) => !task.done
+      && normalizeTaskRecurrence(task.recurrence, task.dueDate) === TASK_RECURRENCE.once
+      && task.dueDate < today,
   ).length;
   const withoutDateCount = tasks.filter((task) => !task.done && !task.dueDate).length;
 
@@ -189,6 +208,7 @@ export default function Calendar({ onNavigate = () => {} }) {
       dueDate: selectedDate,
       dueTime: newDueTime || null,
       priority: newPriority,
+      recurrence: newRecurrence,
       reminderMinutesBefore: newReminder,
       text,
     });
@@ -196,6 +216,7 @@ export default function Calendar({ onNavigate = () => {} }) {
       setNewTask("");
       setNewDueTime("");
       setNewPriority("medium");
+      setNewRecurrence(TASK_RECURRENCE.once);
       setNewReminder("");
     }
     setAdding(false);
@@ -271,7 +292,7 @@ export default function Calendar({ onNavigate = () => {} }) {
                     <span className="calendarDayNumber">{day.date.getDate()}</span>
                     <span className="calendarDayTasks">
                       {dayTasks.slice(0, 3).map((task) => (
-                        <CalendarTaskLine key={task.id} compact task={task} />
+                        <CalendarTaskLine key={task.occurrenceKey} compact task={task} />
                       ))}
                       {hiddenCount > 0 && (
                         <span className="calendarMoreTasks">+{hiddenCount} más</span>
@@ -342,6 +363,34 @@ export default function Calendar({ onNavigate = () => {} }) {
                     ))}
                   </select>
                 </div>
+                <fieldset className="calendarRecurrence">
+                  <legend>
+                    <Repeat2 aria-hidden="true" size={13} strokeWidth={1.8} />
+                    Repetición <small>Opcional</small>
+                  </legend>
+                  <div className="calendarRecurrenceOptions">
+                    {TASK_RECURRENCE_OPTIONS.map((option) => (
+                      <label
+                        key={option.value}
+                        className={newRecurrence === option.value ? "calendarRecurrenceActive" : ""}
+                      >
+                        <input
+                          type="radio"
+                          name="calendar-recurrence"
+                          value={option.value}
+                          checked={newRecurrence === option.value}
+                          onChange={(event) => setNewRecurrence(event.target.value)}
+                        />
+                        <span>{option.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <p>
+                    {TASK_RECURRENCE_OPTIONS.find(
+                      (option) => option.value === newRecurrence,
+                    )?.hint}
+                  </p>
+                </fieldset>
                 <div className="calendarQuickActions">
                   <label htmlFor="calendar-task-priority" className="srOnly">
                     Prioridad de la nueva tarea
@@ -370,11 +419,15 @@ export default function Calendar({ onNavigate = () => {} }) {
                 </div>
               ) : (
                 selectedTasks.map((task) => (
-                  <label key={task.id} className="calendarSelectedTask">
+                  <label key={task.occurrenceKey} className="calendarSelectedTask">
                     <input
                       type="checkbox"
                       checked={task.done}
-                      onChange={() => void toggleTask(task.id)}
+                      onChange={() => void (
+                        task.recurring
+                          ? toggleTaskOccurrence(task.id, task.occurrenceDate)
+                          : toggleTask(task.id)
+                      )}
                       aria-label={`${task.done ? "Desmarcar" : "Marcar"} ${task.text}`}
                     />
                     <span className="calendarSelectedCopy">
@@ -397,6 +450,12 @@ export default function Calendar({ onNavigate = () => {} }) {
                               {formatReminderLead(task.reminderMinutesBefore)}
                             </small>
                           )}
+                        {task.recurring && (
+                          <small className="calendarRecurrenceMeta">
+                            <Repeat2 aria-hidden="true" size={11} strokeWidth={1.8} />
+                            {getTaskRecurrenceLabel(task.recurrence)}
+                          </small>
+                        )}
                       </span>
                     </span>
                   </label>
@@ -422,7 +481,7 @@ export default function Calendar({ onNavigate = () => {} }) {
                 upcomingTasks.map((task) => (
                   <button
                     type="button"
-                    key={task.id}
+                    key={task.occurrenceKey}
                     className="calendarUpcomingTask"
                     onClick={() => {
                       setSelectedDate(task.dueDate);

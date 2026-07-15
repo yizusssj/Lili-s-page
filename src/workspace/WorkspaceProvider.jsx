@@ -23,6 +23,11 @@ import { getLocalDateKey } from "../utils/date.js";
 import { prepareMemoryImage } from "../utils/images.js";
 import { normalizeReminderMinutes } from "../utils/reminders.js";
 import { writeJSON, writeText } from "../utils/storage.js";
+import {
+  normalizeCompletedOccurrenceDates,
+  normalizeTaskRecurrence,
+  TASK_RECURRENCE,
+} from "../utils/taskRecurrence.js";
 import { WorkspaceContext } from "./workspaceContext.js";
 import {
   deleteAlbum as deleteAlbumRemote,
@@ -88,8 +93,17 @@ function normalizeTaskInput(value) {
   const reminderMinutesBefore = dueTime
     ? normalizeReminderMinutes(input.reminderMinutesBefore)
     : null;
+  const recurrence = normalizeTaskRecurrence(input.recurrence, dueDate);
 
-  return { dueDate, dueTime, priority, reminderMinutesBefore, text };
+  return {
+    dueDate,
+    dueTime,
+    priority,
+    recurrence,
+    recurrenceCompletedDates: [],
+    reminderMinutesBefore,
+    text,
+  };
 }
 
 export default function WorkspaceProvider({ children }) {
@@ -496,6 +510,8 @@ export default function WorkspaceProvider({ children }) {
         dueDate,
         dueTime,
         priority,
+        recurrence,
+        recurrenceCompletedDates,
         reminderMinutesBefore,
         text,
       } = normalizeTaskInput(value);
@@ -509,6 +525,8 @@ export default function WorkspaceProvider({ children }) {
         dueDate,
         dueTime,
         priority,
+        recurrence,
+        recurrenceCompletedDates,
         reminderAcknowledgedAt: null,
         reminderMinutesBefore,
         createdAt: now,
@@ -563,6 +581,7 @@ export default function WorkspaceProvider({ children }) {
 
       const scheduleChanged = Object.hasOwn(fields, "dueDate")
         || Object.hasOwn(fields, "dueTime")
+        || Object.hasOwn(fields, "recurrence")
         || Object.hasOwn(fields, "reminderMinutesBefore");
 
       if (scheduleChanged) {
@@ -587,19 +606,38 @@ export default function WorkspaceProvider({ children }) {
         const reminderMinutesBefore = dueTime
           ? normalizeReminderMinutes(reminderInput)
           : null;
+        const recurrenceInput = Object.hasOwn(fields, "recurrence")
+          ? fields.recurrence
+          : previous.recurrence;
+        const recurrence = normalizeTaskRecurrence(recurrenceInput, dueDate);
+        const recurrenceReset = dueDate !== previous.dueDate
+          || recurrence !== previous.recurrence;
+        const recurrenceCompletedDates = recurrenceReset
+          ? []
+          : normalizeCompletedOccurrenceDates(previous.recurrenceCompletedDates);
 
         Object.assign(nextFields, {
           dueDate,
           dueTime,
+          recurrence,
+          recurrenceCompletedDates,
           reminderAcknowledgedAt: null,
           reminderMinutesBefore,
         });
         Object.assign(databaseFields, {
           due_date: dueDate,
           due_time: dueTime,
+          recurrence,
+          recurrence_completed_dates: recurrenceCompletedDates,
           reminder_acknowledged_at: null,
           reminder_minutes_before: reminderMinutesBefore,
         });
+      } else if (Object.hasOwn(fields, "recurrenceCompletedDates")) {
+        const recurrenceCompletedDates = previous.recurrence === TASK_RECURRENCE.once
+          ? []
+          : normalizeCompletedOccurrenceDates(fields.recurrenceCompletedDates);
+        nextFields.recurrenceCompletedDates = recurrenceCompletedDates;
+        databaseFields.recurrence_completed_dates = recurrenceCompletedDates;
       } else if (Object.hasOwn(fields, "reminderAcknowledgedAt")) {
         const acknowledgedAt = typeof fields.reminderAcknowledgedAt === "string"
           && !Number.isNaN(new Date(fields.reminderAcknowledgedAt).getTime())
@@ -692,6 +730,28 @@ export default function WorkspaceProvider({ children }) {
       return true;
     },
     [commitTasks, performWrite],
+  );
+
+  const toggleTaskOccurrence = useCallback(
+    async (taskId, dateKey) => {
+      const task = tasksRef.current.find((item) => item.id === taskId);
+      if (!task) return false;
+      if (task.recurrence === TASK_RECURRENCE.once) return toggleTask(taskId);
+      if (typeof dateKey !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
+        return false;
+      }
+
+      const completedDates = new Set(
+        normalizeCompletedOccurrenceDates(task.recurrenceCompletedDates),
+      );
+      if (completedDates.has(dateKey)) completedDates.delete(dateKey);
+      else completedDates.add(dateKey);
+
+      return updateTask(taskId, {
+        recurrenceCompletedDates: [...completedDates].sort(),
+      });
+    },
+    [toggleTask, updateTask],
   );
 
   const removeTask = useCallback(
@@ -1410,6 +1470,7 @@ export default function WorkspaceProvider({ children }) {
     tasks,
     togglePriority,
     toggleTask,
+    toggleTaskOccurrence,
     updateTask,
     updateNoteDraft,
     updateAlbum,

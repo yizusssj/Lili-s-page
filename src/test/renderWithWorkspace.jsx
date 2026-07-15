@@ -30,6 +30,8 @@ function WorkspaceHarness({ children, initialData }) {
         dueDate: input.dueDate ?? null,
         dueTime: input.dueTime ?? null,
         priority: input.priority ?? "medium",
+        recurrence: input.recurrence ?? "once",
+        recurrenceCompletedDates: [],
         reminderAcknowledgedAt: null,
         reminderMinutesBefore: input.reminderMinutesBefore ?? null,
         createdAt: now,
@@ -209,6 +211,19 @@ function WorkspaceHarness({ children, initialData }) {
         ),
       ),
     toggleTask,
+    toggleTaskOccurrence: async (taskId, dateKey) => {
+      setTasks((current) => current.map((task) => {
+        if (task.id !== taskId) return task;
+        const completedDates = new Set(task.recurrenceCompletedDates ?? []);
+        if (completedDates.has(dateKey)) completedDates.delete(dateKey);
+        else completedDates.add(dateKey);
+        return {
+          ...task,
+          recurrenceCompletedDates: [...completedDates].sort(),
+        };
+      }));
+      return true;
+    },
     updateTask,
     updateNoteDraft,
     updateAlbum: async (albumId, fields) => {

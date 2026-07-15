@@ -11,6 +11,7 @@ import { PAGES } from "./config.js";
 import { styles } from "./styles.jsx";
 
 const Calendar = lazy(() => import("../pages/Calendar.jsx"));
+const Arcade = lazy(() => import("../pages/Arcade.jsx"));
 
 const PAGE_COMPONENTS = {
   today: Today,
@@ -18,6 +19,7 @@ const PAGE_COMPONENTS = {
   calendar: Calendar,
   notes: Notes,
   memories: Memories,
+  games: Arcade,
   pinterest: Pinterest,
 };
 
@@ -48,7 +50,7 @@ export default function App() {
 
         <section style={styles.content} className="content">
           <SyncStatus />
-          <Suspense fallback={<div className="pageLoading">Abriendo calendario...</div>}>
+          <Suspense fallback={<div className="pageLoading">Abriendo sección...</div>}>
             <ActivePage onNavigate={setActive} />
           </Suspense>
         </section>

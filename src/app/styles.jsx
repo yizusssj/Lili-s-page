@@ -97,8 +97,7 @@ export const styles = {
   header: {
     margin: "16px 16px 0 0",
     padding: "19px 24px",
-    position: "sticky",
-    top: 16,
+    position: "relative",
     zIndex: 10,
     border: "1px solid var(--glass-border)",
     borderRadius: 24,
