@@ -23,6 +23,10 @@ import MemoryCollage from "../components/MemoryCollage.jsx";
 import SectionTitle from "../components/SectionTitle.jsx";
 import { formatCalendarDate, getLocalDateKey } from "../utils/date.js";
 import { validateMemoryImage } from "../utils/images.js";
+import {
+  getMemoryUploadErrorMessage,
+  isBlockingMemoryUploadError,
+} from "../utils/memoryUploadErrors.js";
 import { useWorkspace } from "../workspace/workspaceContext.js";
 
 const ACCEPTED_IMAGES = "image/jpeg,image/png,image/webp,image/heic,image/heif";
@@ -384,6 +388,7 @@ export default function Memories() {
     setUploadProgress({ completed: 0, total: files.length });
     const failedFiles = [];
     let completed = 0;
+    let firstError = null;
     const lastSortOrder = albumMemories.reduce((highest, memory) => {
       const candidate = Number.isSafeInteger(memory.sortOrder)
         ? memory.sortOrder
@@ -403,8 +408,18 @@ export default function Memories() {
         title: "",
       });
 
-      if (result.error) failedFiles.push(selectedFile);
-      else completed += 1;
+      if (result.error) {
+        failedFiles.push(selectedFile);
+        firstError ??= result.error;
+
+        if (isBlockingMemoryUploadError(result.error)) {
+          failedFiles.push(...files.slice(index + 1));
+          setUploadProgress({ completed, total: files.length });
+          break;
+        }
+      } else {
+        completed += 1;
+      }
       setUploadProgress({ completed, total: files.length });
     }
 
@@ -413,10 +428,11 @@ export default function Memories() {
     if (failedFiles.length > 0) {
       setFiles(failedFiles);
       setUploadProgress({ completed: 0, total: failedFiles.length });
+      const errorMessage = getMemoryUploadErrorMessage(firstError);
       setFormError(
         completed > 0
-          ? `Se guardaron ${completed} de ${files.length}. Vuelve a intentar con las que faltan.`
-          : "No se pudieron guardar las fotografías. Inténtalo nuevamente.",
+          ? `Se guardaron ${completed} de ${files.length}. ${errorMessage}`
+          : errorMessage,
       );
       return;
     }

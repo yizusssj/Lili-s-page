@@ -102,6 +102,30 @@ function WorkspaceHarness({ children, initialData }) {
     });
   }
 
+  async function addMemory(input) {
+    if (initialData.addMemory) return initialData.addMemory(input);
+
+    const { albumId, description, file, memoryDate, sortOrder, title } = input;
+    const now = new Date().toISOString();
+    const memory = {
+      id: crypto.randomUUID(),
+      albumId,
+      title,
+      description,
+      memoryDate,
+      sortOrder: sortOrder ?? Date.now() * 1000,
+      storagePath: `workspace-test/${crypto.randomUUID()}.jpg`,
+      mimeType: "image/jpeg",
+      fileSize: file.size,
+      createdAt: now,
+      updatedAt: now,
+      imageUrl: "https://example.test/memory.jpg",
+      imageUrlExpiresAt: Date.now() + 3600000,
+    };
+    setMemories((current) => [memory, ...current]);
+    return { data: memory, error: null };
+  }
+
   const value = {
     addAlbum: async ({ description, title }) => {
       const now = new Date().toISOString();
@@ -116,26 +140,7 @@ function WorkspaceHarness({ children, initialData }) {
       setAlbums((current) => [album, ...current]);
       return { data: album, error: null };
     },
-    addMemory: async ({ albumId, description, file, memoryDate, sortOrder, title }) => {
-      const now = new Date().toISOString();
-      const memory = {
-        id: crypto.randomUUID(),
-        albumId,
-        title,
-        description,
-        memoryDate,
-        sortOrder: sortOrder ?? Date.now() * 1000,
-        storagePath: `workspace-test/${crypto.randomUUID()}.jpg`,
-        mimeType: "image/jpeg",
-        fileSize: file.size,
-        createdAt: now,
-        updatedAt: now,
-        imageUrl: "https://example.test/memory.jpg",
-        imageUrlExpiresAt: Date.now() + 3600000,
-      };
-      setMemories((current) => [memory, ...current]);
-      return { data: memory, error: null };
-    },
+    addMemory,
     albums,
     addTask,
     clearCompletedTasks: async () => {

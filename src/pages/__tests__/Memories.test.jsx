@@ -87,6 +87,44 @@ describe("Recuerdos", () => {
     expect(await screen.findByRole("dialog", { name: /Fotografía del/ })).toBeInTheDocument();
   });
 
+  it("explica la migración faltante sin intentar todo el lote", async () => {
+    const user = userEvent.setup();
+    const addMemory = vi.fn().mockResolvedValue({
+      data: null,
+      error: {
+        code: "PGRST204",
+        message: "Could not find the 'sort_order' column of 'memories' in the schema cache",
+      },
+    });
+    renderWithWorkspace(<Memories />, {
+      addMemory,
+      albums: [
+        {
+          id: "album-migracion",
+          title: "Lili y yo",
+          description: "",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ],
+    });
+
+    await user.click(screen.getByRole("button", { name: "Abrir álbum Lili y yo" }));
+    await user.click(screen.getByRole("button", { name: "Añadir la primera foto" }));
+    await user.upload(screen.getByLabelText(/Elegir fotografías/), [
+      new File(["uno"], "uno.jpg", { type: "image/jpeg" }),
+      new File(["dos"], "dos.jpg", { type: "image/jpeg" }),
+      new File(["tres"], "tres.jpg", { type: "image/jpeg" }),
+    ]);
+    await user.click(screen.getByRole("button", { name: "Guardar 3 fotos" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /actualización de Recuerdos en Supabase/i,
+    );
+    expect(addMemory).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("button", { name: "Guardar 3 fotos" })).toBeInTheDocument();
+  });
+
   it("edita y elimina un álbum con confirmación", async () => {
     const user = userEvent.setup();
     renderWithWorkspace(<Memories />, {
