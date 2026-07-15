@@ -63,6 +63,14 @@ export function isBlockingMemoryUploadError(error) {
 export function getMemoryUploadErrorMessage(error) {
   const text = collectErrorText(error);
 
+  if (
+    text.includes("23502")
+    && text.includes("title")
+    && text.includes("memories")
+  ) {
+    return "Falta habilitar los títulos opcionales de Recuerdos en Supabase. Ejecuta la migración de reparación y vuelve a intentarlo.";
+  }
+
   if (text.includes("sort_order") || text.includes("schema cache")) {
     return "Falta aplicar la actualización de Recuerdos en Supabase. Ejecuta la migración nueva y vuelve a intentarlo.";
   }

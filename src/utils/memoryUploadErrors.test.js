@@ -17,6 +17,20 @@ describe("errores al subir recuerdos", () => {
     expect(getMemoryUploadErrorMessage(error)).toMatch(/actualización de Recuerdos/i);
   });
 
+  it("explica cuando el título sigue siendo obligatorio en Supabase", () => {
+    const error = createMemoryUploadError(
+      {
+        code: "23502",
+        message: "null value in column \"title\" of relation \"memories\" violates not-null constraint",
+      },
+      "database",
+      "No se pudo guardar.",
+    );
+
+    expect(getMemoryUploadErrorMessage(error)).toMatch(/títulos opcionales/i);
+    expect(isBlockingMemoryUploadError(error)).toBe(true);
+  });
+
   it("distingue una fotografía que el navegador no puede preparar", () => {
     const error = new Error("Este navegador no pudo leer la fotografía seleccionada.");
 
