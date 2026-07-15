@@ -26,6 +26,8 @@ describe("Arcade", () => {
     expect(screen.getByRole("heading", { name: "Elige un juego" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /Tetris/ }));
 
+    expect(document.documentElement).toHaveClass("arcadeGameActive");
+    expect(document.querySelector(".arcadeGameScreen")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Tetris" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Comenzar" }));
     expect(screen.getByRole("img", { name: /Tablero de Tetris/ }))
@@ -34,5 +36,6 @@ describe("Arcade", () => {
 
     await user.click(screen.getByRole("button", { name: "Todos los juegos" }));
     expect(screen.getByRole("heading", { name: "Elige un juego" })).toBeInTheDocument();
+    expect(document.documentElement).not.toHaveClass("arcadeGameActive");
   });
 });

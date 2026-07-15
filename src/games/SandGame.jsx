@@ -1,20 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowDown,
   ArrowLeft,
-  ArrowRight,
-  ChevronsDown,
   Hand,
   Keyboard,
   Pause,
   Play,
-  RotateCw,
   Sparkles,
   Trophy,
 } from "lucide-react";
 import { readJSON, writeJSON } from "../utils/storage.js";
 import { getPieceCells } from "./blockEngine.js";
 import DifficultyPicker from "./DifficultyPicker.jsx";
+import useBoardGestures from "./useBoardGestures.js";
 import {
   advanceSandGame,
   createSandGame,
@@ -195,9 +192,6 @@ export default function SandGame({ onBack }) {
   const engineRef = useRef(initialGame);
   const [ui, setUi] = useState(() => toUi(initialGame));
   const canvasRef = useRef(null);
-  const pointerStartRef = useRef(null);
-  const repeatDelayRef = useRef(null);
-  const repeatIntervalRef = useRef(null);
 
   const syncUi = useCallback((game) => {
     const nextUi = toUi(game);
@@ -250,21 +244,6 @@ export default function SandGame({ onBack }) {
     syncUi(engineRef.current);
     drawSand(canvasRef.current, engineRef.current);
   }, [syncUi]);
-
-  const stopRepeating = useCallback(() => {
-    window.clearTimeout(repeatDelayRef.current);
-    window.clearInterval(repeatIntervalRef.current);
-    repeatDelayRef.current = null;
-    repeatIntervalRef.current = null;
-  }, []);
-
-  const beginRepeating = useCallback((action) => {
-    stopRepeating();
-    action();
-    repeatDelayRef.current = window.setTimeout(() => {
-      repeatIntervalRef.current = window.setInterval(action, 78);
-    }, 240);
-  }, [stopRepeating]);
 
   useEffect(() => {
     let animationFrame;
@@ -332,38 +311,6 @@ export default function SandGame({ onBack }) {
     return () => document.removeEventListener("visibilitychange", pauseWhenHidden);
   }, [syncUi]);
 
-  useEffect(() => stopRepeating, [stopRepeating]);
-
-  function beginGesture(event) {
-    if (ui.status !== "running") return;
-    event.currentTarget.setPointerCapture(event.pointerId);
-    pointerStartRef.current = { x: event.clientX, y: event.clientY };
-  }
-
-  function endGesture(event) {
-    const start = pointerStartRef.current;
-    pointerStartRef.current = null;
-    if (!start || ui.status !== "running") return;
-    const deltaX = event.clientX - start.x;
-    const deltaY = event.clientY - start.y;
-
-    if (Math.abs(deltaX) < 16 && Math.abs(deltaY) < 16) {
-      rotate();
-      return;
-    }
-    if (deltaY > 55 && Math.abs(deltaY) > Math.abs(deltaX)) {
-      drop();
-      return;
-    }
-    if (Math.abs(deltaX) > 22) {
-      const steps = Math.min(4, Math.max(1, Math.round(Math.abs(deltaX) / 34)));
-      for (let index = 0; index < steps; index += 1) {
-        if (deltaX < 0) moveLeft();
-        else moveRight();
-      }
-    }
-  }
-
   const nextCells = useMemo(() => {
     const occupied = new Set(
       getPieceCells({ rotation: 0, type: ui.nextType })
@@ -377,9 +324,17 @@ export default function SandGame({ onBack }) {
 
   const displayedBest = Math.max(bestScores[difficulty] ?? 0, ui.score);
   const playing = ui.status === "running" || ui.status === "paused";
+  const boardGestureHandlers = useBoardGestures({
+    enabled: ui.status === "running",
+    onDrop: drop,
+    onMoveDown: moveDown,
+    onMoveLeft: moveLeft,
+    onMoveRight: moveRight,
+    onRotate: rotate,
+  });
 
   return (
-    <section className="blockGameShell sandGameShell">
+    <section className={`blockGameShell sandGameShell${playing ? " blockGameShellPlaying" : ""}`}>
       <div className="blockGameToolbar">
         <button type="button" className="arcadeBackButton" onClick={onBack}>
           <ArrowLeft aria-hidden="true" size={16} strokeWidth={1.8} />
@@ -423,9 +378,7 @@ export default function SandGame({ onBack }) {
               className="sandGameCanvas"
               role="img"
               aria-label={`Tablero de Sandris. Puntuación ${ui.score}. Dificultad ${difficulty}.`}
-              onPointerCancel={() => { pointerStartRef.current = null; }}
-              onPointerDown={beginGesture}
-              onPointerUp={endGesture}
+              {...boardGestureHandlers}
             />
 
             {ui.combo > 1 && ui.status === "running" && (
@@ -488,56 +441,6 @@ export default function SandGame({ onBack }) {
             )}
           </div>
 
-          <div className="blockGameControls sandGameControls" aria-label="Controles táctiles">
-            <button
-              type="button"
-              onContextMenu={(event) => event.preventDefault()}
-              onPointerCancel={stopRepeating}
-              onPointerDown={(event) => {
-                event.preventDefault();
-                beginRepeating(moveLeft);
-              }}
-              onPointerLeave={stopRepeating}
-              onPointerUp={stopRepeating}
-              aria-label="Mover a la izquierda"
-            >
-              <ArrowLeft aria-hidden="true" size={23} strokeWidth={2} />
-            </button>
-            <button type="button" onClick={rotate} aria-label="Girar pieza">
-              <RotateCw aria-hidden="true" size={21} strokeWidth={2} />
-            </button>
-            <button
-              type="button"
-              onContextMenu={(event) => event.preventDefault()}
-              onPointerCancel={stopRepeating}
-              onPointerDown={(event) => {
-                event.preventDefault();
-                beginRepeating(moveDown);
-              }}
-              onPointerLeave={stopRepeating}
-              onPointerUp={stopRepeating}
-              aria-label="Bajar pieza"
-            >
-              <ArrowDown aria-hidden="true" size={23} strokeWidth={2} />
-            </button>
-            <button
-              type="button"
-              onContextMenu={(event) => event.preventDefault()}
-              onPointerCancel={stopRepeating}
-              onPointerDown={(event) => {
-                event.preventDefault();
-                beginRepeating(moveRight);
-              }}
-              onPointerLeave={stopRepeating}
-              onPointerUp={stopRepeating}
-              aria-label="Mover a la derecha"
-            >
-              <ArrowRight aria-hidden="true" size={23} strokeWidth={2} />
-            </button>
-            <button type="button" className="blockGameDropButton" onClick={drop} aria-label="Soltar pieza">
-              <ChevronsDown aria-hidden="true" size={23} strokeWidth={2} />
-            </button>
-          </div>
         </div>
 
         <aside className="blockGamePanel">

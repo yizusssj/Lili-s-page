@@ -1,18 +1,15 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ArrowDown,
   ArrowLeft,
-  ArrowRight,
-  ChevronsDown,
   Keyboard,
   Pause,
   Play,
-  RotateCw,
   Smartphone,
   Trophy,
 } from "lucide-react";
 import { readText, writeText } from "../utils/storage.js";
 import DifficultyPicker from "./DifficultyPicker.jsx";
+import useBoardGestures from "./useBoardGestures.js";
 import {
   BOARD_COLUMNS,
   createGame,
@@ -65,29 +62,12 @@ export default function FallingBlocks({ onBack }) {
   const [game, setGame] = useState(() => createGame());
   const [difficulty, setDifficulty] = useState("normal");
   const [bestScore, setBestScore] = useState(readBestScore);
-  const repeatDelayRef = useRef(null);
-  const repeatIntervalRef = useRef(null);
   const board = useMemo(() => getVisibleBoard(game), [game]);
   const nextBoard = useMemo(
     () => getNextPieceBoard(game.nextType),
     [game.nextType],
   );
   const displayedBestScore = Math.max(bestScore, game.score);
-
-  const stopRepeating = useCallback(() => {
-    window.clearTimeout(repeatDelayRef.current);
-    window.clearInterval(repeatIntervalRef.current);
-    repeatDelayRef.current = null;
-    repeatIntervalRef.current = null;
-  }, []);
-
-  const beginRepeating = useCallback((action) => {
-    stopRepeating();
-    action();
-    repeatDelayRef.current = window.setTimeout(() => {
-      repeatIntervalRef.current = window.setInterval(action, 75);
-    }, 230);
-  }, [stopRepeating]);
 
   const moveLeft = useCallback(() => {
     setGame((current) => movePiece(current, -1, 0));
@@ -177,21 +157,18 @@ export default function FallingBlocks({ onBack }) {
     return () => document.removeEventListener("visibilitychange", pauseWhenHidden);
   }, []);
 
-  useEffect(() => stopRepeating, [stopRepeating]);
-
-  const repeatHandlers = (action) => ({
-    onContextMenu: (event) => event.preventDefault(),
-    onPointerCancel: stopRepeating,
-    onPointerDown: (event) => {
-      event.preventDefault();
-      beginRepeating(action);
-    },
-    onPointerLeave: stopRepeating,
-    onPointerUp: stopRepeating,
+  const playing = ["running", "paused", "clearing"].includes(game.status);
+  const boardGestureHandlers = useBoardGestures({
+    enabled: game.status === "running",
+    onDrop: drop,
+    onMoveDown: moveDown,
+    onMoveLeft: moveLeft,
+    onMoveRight: moveRight,
+    onRotate: rotate,
   });
 
   return (
-    <section className="blockGameShell">
+    <section className={`blockGameShell${playing ? " blockGameShellPlaying" : ""}`}>
       <div className="blockGameToolbar">
         <button type="button" className="arcadeBackButton" onClick={onBack}>
           <ArrowLeft aria-hidden="true" size={16} strokeWidth={1.8} />
@@ -222,7 +199,7 @@ export default function FallingBlocks({ onBack }) {
       </div>
 
       <DifficultyPicker
-        disabled={["running", "paused", "clearing"].includes(game.status)}
+        disabled={playing}
         onChange={changeDifficulty}
         value={difficulty}
       />
@@ -233,6 +210,7 @@ export default function FallingBlocks({ onBack }) {
             className={`blockGameBoard${game.status === "clearing" ? " blockGameBoardClearing" : ""}`}
             role="img"
             aria-label={`Tablero de Tetris. Puntuación ${game.score}. Nivel ${game.level}.`}
+            {...boardGestureHandlers}
           >
             {board.flat().map((cell, index) => {
               const row = Math.floor(index / BOARD_COLUMNS);
@@ -332,23 +310,6 @@ export default function FallingBlocks({ onBack }) {
             )}
           </div>
 
-          <div className="blockGameControls" aria-label="Controles táctiles">
-            <button type="button" onClick={rotate} aria-label="Girar pieza">
-              <RotateCw aria-hidden="true" size={21} strokeWidth={2} />
-            </button>
-            <button type="button" {...repeatHandlers(moveLeft)} aria-label="Mover a la izquierda">
-              <ArrowLeft aria-hidden="true" size={23} strokeWidth={2} />
-            </button>
-            <button type="button" {...repeatHandlers(moveDown)} aria-label="Bajar pieza">
-              <ArrowDown aria-hidden="true" size={23} strokeWidth={2} />
-            </button>
-            <button type="button" {...repeatHandlers(moveRight)} aria-label="Mover a la derecha">
-              <ArrowRight aria-hidden="true" size={23} strokeWidth={2} />
-            </button>
-            <button type="button" className="blockGameDropButton" onClick={drop} aria-label="Soltar pieza">
-              <ChevronsDown aria-hidden="true" size={23} strokeWidth={2} />
-            </button>
-          </div>
         </div>
 
         <aside className="blockGamePanel">

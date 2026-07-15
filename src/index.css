@@ -37,6 +37,261 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
+/* Partidas a pantalla completa */
+html.arcadeGameActive,
+body.arcadeGameActive {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.arcadeGameScreen {
+  width: 100%;
+  height: 100dvh;
+  padding:
+    max(8px, env(safe-area-inset-top))
+    max(10px, env(safe-area-inset-right))
+    max(8px, env(safe-area-inset-bottom))
+    max(10px, env(safe-area-inset-left));
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 18% 8%, rgba(159, 228, 245, 0.42), transparent 31%),
+    radial-gradient(circle at 86% 88%, rgba(196, 181, 253, 0.36), transparent 34%),
+    linear-gradient(155deg, #f8f2f7, #e9e9f7 55%, #f6eff4);
+  overscroll-behavior: none;
+  touch-action: none;
+}
+
+.arcadeGameScreen .blockGameShell {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 10px clamp(10px, 2vw, 24px);
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.arcadeGameScreen .blockGameShellPlaying {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.arcadeGameScreen .blockGameShellPlaying .blockGameHeading,
+.arcadeGameScreen .blockGameShellPlaying .gameDifficultyPicker {
+  display: none;
+}
+
+.arcadeGameScreen .blockGameToolbar {
+  position: relative;
+  z-index: 12;
+}
+
+.arcadeGameScreen .blockGameHeading {
+  margin: 7px auto 6px;
+}
+
+.arcadeGameScreen .blockGameHeading h2 {
+  margin-top: 2px;
+  font-size: 23px;
+}
+
+.arcadeGameScreen .blockGameHeading p {
+  display: none;
+}
+
+.arcadeGameScreen .gameDifficultyPicker {
+  min-height: 44px;
+  margin-bottom: 7px;
+}
+
+.arcadeGameScreen .blockGameLayout {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  align-self: stretch;
+  align-items: center;
+  grid-template-columns: minmax(220px, 380px) minmax(170px, 210px);
+}
+
+.arcadeGameScreen .blockGameStage {
+  height: 100%;
+  min-height: 0;
+  justify-content: center;
+}
+
+.arcadeGameScreen .blockGameBoard,
+.arcadeGameScreen .sandGameCanvasFrame {
+  width: min(100%, 340px, calc((100dvh - 190px) / 2));
+  max-height: 100%;
+}
+
+.arcadeGameScreen .blockGameShellPlaying .blockGameBoard,
+.arcadeGameScreen .blockGameShellPlaying .sandGameCanvasFrame {
+  width: min(100%, 380px, calc((100dvh - 88px) / 2));
+}
+
+.arcadeGameScreen .blockGamePanel {
+  max-height: 100%;
+}
+
+.arcadeGameScreen .blockGameBoard,
+.arcadeGameScreen .sandGameCanvas,
+.arcadeGameScreen .sandGameCanvasFrame {
+  cursor: grab;
+  touch-action: none;
+}
+
+.arcadeGameScreen .blockGameBoard:active,
+.arcadeGameScreen .sandGameCanvas:active {
+  cursor: grabbing;
+}
+
+@media (max-width: 720px) {
+  .arcadeGameScreen {
+    padding:
+      max(5px, env(safe-area-inset-top))
+      max(8px, env(safe-area-inset-right))
+      max(5px, env(safe-area-inset-bottom))
+      max(8px, env(safe-area-inset-left));
+  }
+
+  .arcadeGameScreen .blockGameShell {
+    padding: 3px 2px;
+    grid-template-rows: auto auto minmax(0, 1fr);
+  }
+
+  .arcadeGameScreen .blockGameShellPlaying {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .arcadeGameScreen .blockGameHeading {
+    display: none;
+  }
+
+  .arcadeGameScreen .blockGameToolbar {
+    min-height: 40px;
+  }
+
+  .arcadeGameScreen .arcadeBackButton,
+  .arcadeGameScreen .blockGamePauseButton {
+    min-height: 40px;
+    border-radius: 13px;
+  }
+
+  .arcadeGameScreen .blockGamePauseButton {
+    width: 40px;
+  }
+
+  .arcadeGameScreen .blockGameOfflineBadge {
+    display: none;
+  }
+
+  .arcadeGameScreen .gameDifficultyPicker {
+    width: min(100%, 340px);
+    min-height: 43px;
+    margin: 4px auto 6px;
+  }
+
+  .arcadeGameScreen .blockGameLayout,
+  .arcadeGameScreen .sandGameLayout {
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    align-content: center;
+    gap: 7px;
+  }
+
+  .arcadeGameScreen .blockGameStage {
+    min-height: 0;
+  }
+
+  .arcadeGameScreen .blockGameBoard,
+  .arcadeGameScreen .sandGameCanvasFrame {
+    width: min(calc(100vw - 24px), 330px, calc((100dvh - 300px) / 2));
+  }
+
+  .arcadeGameScreen .blockGameShellPlaying .blockGameBoard,
+  .arcadeGameScreen .blockGameShellPlaying .sandGameCanvasFrame {
+    width: min(calc(100vw - 24px), 360px, calc((100dvh - 218px) / 2));
+  }
+
+  .arcadeGameScreen .blockGamePanel {
+    width: min(calc(100vw - 24px), 360px);
+    display: block;
+    justify-self: center;
+  }
+
+  .arcadeGameScreen .blockGameMetrics {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .arcadeGameScreen .blockGameMetric {
+    min-height: 45px;
+    padding: 6px;
+  }
+
+  .arcadeGameScreen .blockGameMetric span {
+    font-size: 7px;
+  }
+
+  .arcadeGameScreen .blockGameMetric strong {
+    font-size: 15px;
+  }
+
+  .arcadeGameScreen .blockGameNext,
+  .arcadeGameScreen .blockGameHelp {
+    display: none;
+  }
+}
+
+@media (max-height: 560px) and (orientation: landscape) {
+  .arcadeGameScreen .blockGameHeading,
+  .arcadeGameScreen .blockGameShellPlaying .blockGameHeading {
+    display: none;
+  }
+
+  .arcadeGameScreen .blockGameShell {
+    grid-template-rows: auto auto minmax(0, 1fr);
+  }
+
+  .arcadeGameScreen .blockGameShellPlaying {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .arcadeGameScreen .blockGameBoard,
+  .arcadeGameScreen .sandGameCanvasFrame,
+  .arcadeGameScreen .blockGameShellPlaying .blockGameBoard,
+  .arcadeGameScreen .blockGameShellPlaying .sandGameCanvasFrame {
+    width: min(31vw, calc((100dvh - 76px) / 2));
+  }
+
+  .arcadeGameScreen .blockGameLayout,
+  .arcadeGameScreen .sandGameLayout {
+    grid-template-columns: minmax(180px, 1fr) minmax(150px, 190px);
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .arcadeGameScreen .blockGamePanel {
+    display: block;
+  }
+
+  .arcadeGameScreen .blockGameNext,
+  .arcadeGameScreen .blockGameHelp {
+    display: none;
+  }
+}
+
 /* Arcade */
 .arcadePage {
   display: flex;

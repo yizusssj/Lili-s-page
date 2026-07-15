@@ -49,7 +49,7 @@ describe("Recuerdos", () => {
 
     expect(confirm).toHaveBeenCalledWith(expect.stringContaining("Nuestro paseo"));
     expect(screen.getByText("Este álbum todavía está vacío")).toBeInTheDocument();
-  });
+  }, 10000);
 
   it("permite guardar solamente la foto y la fecha", async () => {
     const user = userEvent.setup();

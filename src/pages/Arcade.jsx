@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   ArrowRight,
   CircleDot,
@@ -49,15 +50,39 @@ const GAMES = [
   },
 ];
 
+function FullscreenGame({ children }) {
+  useEffect(() => {
+    document.documentElement.classList.add("arcadeGameActive");
+    document.body.classList.add("arcadeGameActive");
+    return () => {
+      document.documentElement.classList.remove("arcadeGameActive");
+      document.body.classList.remove("arcadeGameActive");
+    };
+  }, []);
+
+  return createPortal(
+    <div className="arcadeGameScreen">{children}</div>,
+    document.body,
+  );
+}
+
 export default function Arcade() {
   const [activeGame, setActiveGame] = useState(null);
 
   if (activeGame === "sand") {
-    return <SandGame onBack={() => setActiveGame(null)} />;
+    return (
+      <FullscreenGame>
+        <SandGame onBack={() => setActiveGame(null)} />
+      </FullscreenGame>
+    );
   }
 
   if (activeGame === "blocks") {
-    return <FallingBlocks onBack={() => setActiveGame(null)} />;
+    return (
+      <FullscreenGame>
+        <FallingBlocks onBack={() => setActiveGame(null)} />
+      </FullscreenGame>
+    );
   }
 
   return (
