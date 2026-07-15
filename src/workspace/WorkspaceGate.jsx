@@ -3,8 +3,12 @@ import useOnlineStatus from "../pwa/useOnlineStatus.js";
 import { useWorkspace } from "./workspaceContext.js";
 
 function getWorkspaceErrorMessage(error, online) {
+  if (error?.code === "OFFLINE_CACHE_MISSING") {
+    return "Conéctate una vez para descargar tu workspace. Después podrás abrirlo y editarlo sin internet.";
+  }
+
   if (!online) {
-    return "Conéctate a internet para recuperar tus datos privados de Supabase.";
+    return "Conéctate una vez para preparar la copia privada de este dispositivo.";
   }
 
   if (error?.code === "WORKSPACE_NOT_FOUND") {

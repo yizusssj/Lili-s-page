@@ -210,6 +210,12 @@ input[type="checkbox"] {
   color: #991b1b;
 }
 
+.syncStatusOffline {
+  border-color: rgba(72, 82, 107, 0.18);
+  background: rgba(247, 248, 252, 0.8);
+  color: #535a6d;
+}
+
 .pageLoading {
   min-height: 180px;
   display: grid;

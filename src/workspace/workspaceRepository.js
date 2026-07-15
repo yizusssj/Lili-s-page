@@ -231,13 +231,13 @@ export async function fetchWorkspaceData(
 export async function insertAlbum(client, workspaceId, userId, album) {
   const { data, error } = await client
     .from("memory_albums")
-    .insert({
+    .upsert({
       created_by: userId,
       description: album.description,
       id: album.id,
       title: album.title,
       workspace_id: workspaceId,
-    })
+    }, { onConflict: "id" })
     .select("id, title, description, cover_memory_id, created_at, updated_at")
     .single();
 
@@ -321,7 +321,7 @@ export async function insertMemory(
     .upload(memory.storagePath, image.blob, {
       cacheControl: String(MEMORY_URL_SECONDS),
       contentType: image.mimeType,
-      upsert: false,
+      upsert: true,
     });
 
   throwIfError(uploadResult.error, "No se pudo subir la fotografía.");
@@ -330,7 +330,7 @@ export async function insertMemory(
   try {
     const { data, error } = await client
       .from("memories")
-      .insert({
+      .upsert({
         album_id: memory.albumId,
         created_by: userId,
         description: memory.description,
@@ -341,7 +341,7 @@ export async function insertMemory(
         storage_path: memory.storagePath,
         title: memory.title,
         workspace_id: workspaceId,
-      })
+      }, { onConflict: "id" })
       .select(
         "id, album_id, title, description, memory_date, storage_path, mime_type, file_size, created_at, updated_at",
       )
@@ -380,7 +380,7 @@ export async function deleteMemory(client, workspaceId, memoryId, storagePath) {
 export async function insertTask(client, workspaceId, userId, task) {
   const { data, error } = await client
     .from("tasks")
-    .insert({
+    .upsert({
       created_by: userId,
       done: task.done,
       due_date: task.dueDate,
@@ -391,7 +391,7 @@ export async function insertTask(client, workspaceId, userId, task) {
       reminder_minutes_before: task.reminderMinutesBefore,
       text: task.text,
       workspace_id: workspaceId,
-    })
+    }, { onConflict: "id" })
     .select(TASK_SELECT)
     .single();
 
@@ -435,14 +435,14 @@ export async function deleteCompletedTasks(client, workspaceId) {
 export async function insertNote(client, workspaceId, userId, note) {
   const { data, error } = await client
     .from("notes")
-    .insert({
+    .upsert({
       content: note.content,
       created_by: userId,
       id: note.id,
       pinned: note.pinned,
       title: note.title,
       workspace_id: workspaceId,
-    })
+    }, { onConflict: "id" })
     .select("id, title, content, pinned, created_at, updated_at")
     .single();
 

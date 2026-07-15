@@ -45,6 +45,10 @@ describe("Acceso privado", () => {
   let authChange;
 
   beforeEach(() => {
+    Object.defineProperty(navigator, "onLine", {
+      configurable: true,
+      value: true,
+    });
     authChange = undefined;
     Object.values(authMock).forEach((mock) => mock.mockReset());
     authMock.getSession.mockResolvedValue({ data: { session: null }, error: null });
@@ -111,5 +115,24 @@ describe("Acceso privado", () => {
     await user.click(screen.getByRole("button", { name: "Cerrar sesión" }));
 
     expect(authMock.signOut).toHaveBeenCalledWith({ scope: "local" });
+    expect(localStorage.getItem("lili:offline-user-v1")).toBeNull();
+  });
+
+  it("recupera la identidad local cuando Supabase no puede renovar sin internet", async () => {
+    Object.defineProperty(navigator, "onLine", {
+      configurable: true,
+      value: false,
+    });
+    localStorage.setItem("lili:offline-user-v1", JSON.stringify({
+      email: "lili@example.com",
+      id: "user-offline",
+    }));
+    authMock.getSession.mockRejectedValue(new TypeError("Failed to fetch"));
+
+    renderAuthFlow();
+
+    expect(await screen.findByText("Sesión de lili@example.com")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Bienvenida de nuevo" }))
+      .not.toBeInTheDocument();
   });
 });

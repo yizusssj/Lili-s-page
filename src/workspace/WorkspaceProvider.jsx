@@ -2,6 +2,23 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { STORAGE_KEYS } from "../app/config.js";
 import { useAuth } from "../auth/authContext.js";
 import { supabase } from "../lib/supabase.js";
+import {
+  cacheRemoteMemoryImages,
+  countOfflineOperations,
+  enqueueOfflineOperation,
+  getOfflineSnapshot,
+  hydrateOfflineMemories,
+  putOfflineImage,
+  removeOfflineImage,
+  removeOfflineImages,
+  requestPersistentStorage,
+  revokeOfflineMemoryUrls,
+  saveOfflineSnapshot,
+} from "../offline/offlineDatabase.js";
+import {
+  flushOfflineOperations,
+  isNetworkError,
+} from "../offline/offlineSync.js";
 import { getLocalDateKey } from "../utils/date.js";
 import { prepareMemoryImage } from "../utils/images.js";
 import { normalizeReminderMinutes } from "../utils/reminders.js";
@@ -90,6 +107,9 @@ export default function WorkspaceProvider({ children }) {
   const [syncError, setSyncError] = useState(null);
   const [pendingWrites, setPendingWrites] = useState(0);
   const [bufferedWrites, setBufferedWrites] = useState(0);
+  const [pendingSync, setPendingSync] = useState(0);
+  const [offlineMode, setOfflineMode] = useState(false);
+  const [syncingOffline, setSyncingOffline] = useState(false);
 
   const workspaceRef = useRef(null);
   const albumsRef = useRef([]);
@@ -102,6 +122,7 @@ export default function WorkspaceProvider({ children }) {
   const noteTimersRef = useRef(new Map());
   const priorityTimerRef = useRef(null);
   const priorityNeedsRetryRef = useRef(false);
+  const syncingOfflineRef = useRef(false);
 
   const updateBufferedWriteCount = useCallback(() => {
     setBufferedWrites(
@@ -162,27 +183,150 @@ export default function WorkspaceProvider({ children }) {
     ],
   );
 
-  const performWrite = useCallback(async (operation, message) => {
+  const queueOperation = useCallback(async (offlineOperation, fallbackData) => {
+    const currentWorkspace = workspaceRef.current;
+    if (!currentWorkspace || !userId) {
+      throw new Error("No hay un workspace disponible para guardar el cambio.");
+    }
+
+    await enqueueOfflineOperation({
+      ...offlineOperation,
+      userId,
+      workspaceId: currentWorkspace.id,
+    });
+    const remaining = await countOfflineOperations(userId, currentWorkspace.id);
+    setPendingSync(remaining);
+    setOfflineMode(true);
+    return { data: fallbackData, error: null, queued: true };
+  }, [userId]);
+
+  const performWrite = useCallback(async (
+    operation,
+    message,
+    { fallbackData = null, offlineOperation = null } = {},
+  ) => {
     pendingWritesRef.current += 1;
     setPendingWrites(pendingWritesRef.current);
     setSyncError(null);
 
     try {
+      if (
+        offlineOperation &&
+        typeof navigator !== "undefined" &&
+        navigator.onLine === false
+      ) {
+        return await queueOperation(offlineOperation, fallbackData);
+      }
+
       return { data: await operation(), error: null };
     } catch (error) {
+      if (offlineOperation && isNetworkError(error)) {
+        try {
+          return await queueOperation(offlineOperation, fallbackData);
+        } catch (storageError) {
+          const storageMessage = "No se pudo guardar el cambio en este dispositivo.";
+          setSyncError(storageMessage);
+          return {
+            data: null,
+            error: normalizeError(storageError, storageMessage),
+          };
+        }
+      }
+
       setSyncError(message);
       return { data: null, error: normalizeError(error, message) };
     } finally {
       pendingWritesRef.current = Math.max(0, pendingWritesRef.current - 1);
       setPendingWrites(pendingWritesRef.current);
     }
-  }, []);
+  }, [queueOperation]);
+
+  const flushPendingChanges = useCallback(async (workspaceOverride) => {
+    const currentWorkspace = workspaceOverride ?? workspaceRef.current;
+    if (!supabase || !userId || !currentWorkspace) return false;
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      setOfflineMode(true);
+      return false;
+    }
+    if (syncingOfflineRef.current) return false;
+
+    const queued = await countOfflineOperations(userId, currentWorkspace.id);
+    setPendingSync(queued);
+    if (queued === 0) {
+      setOfflineMode(false);
+      return true;
+    }
+
+    syncingOfflineRef.current = true;
+    setSyncingOffline(true);
+    setSyncError(null);
+
+    try {
+      await flushOfflineOperations(
+        supabase,
+        userId,
+        currentWorkspace.id,
+        setPendingSync,
+      );
+      setPendingSync(0);
+      setOfflineMode(false);
+      return true;
+    } catch (error) {
+      const remaining = await countOfflineOperations(userId, currentWorkspace.id);
+      setPendingSync(remaining);
+      if (isNetworkError(error)) {
+        setOfflineMode(true);
+      } else {
+        setSyncError("Hay cambios pendientes que necesitan reintentarse.");
+      }
+      return false;
+    } finally {
+      syncingOfflineRef.current = false;
+      setSyncingOffline(false);
+    }
+  }, [userId]);
 
   const loadWorkspace = useCallback(async () => {
     if (!supabase || !userId) return;
 
     setLoading(true);
     setInitializationError(null);
+    let cachedSnapshot = null;
+
+    try {
+      cachedSnapshot = await getOfflineSnapshot(userId);
+      if (cachedSnapshot?.workspace && cachedSnapshot?.data) {
+        const cachedPriorities = cachedSnapshot.data.priorities ?? [];
+        const cachedData = {
+          ...cachedSnapshot.data,
+          memories: await hydrateOfflineMemories(cachedSnapshot.data.memories ?? []),
+          priorities: cachedSnapshot.localDate === getLocalDateKey()
+            ? cachedPriorities
+            : cachedPriorities.map((priority) => ({ ...priority, done: false })),
+        };
+        workspaceRef.current = cachedSnapshot.workspace;
+        setWorkspace(cachedSnapshot.workspace);
+        commitWorkspaceData(cachedData);
+        setPendingSync(
+          await countOfflineOperations(userId, cachedSnapshot.workspace.id),
+        );
+      }
+    } catch {
+      // Si la caché local falla, todavía podemos abrir desde Supabase.
+    }
+
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      setOfflineMode(true);
+      if (!cachedSnapshot) {
+        const error = new Error(
+          "Necesitas abrir este workspace una vez con internet antes de usarlo sin conexion.",
+        );
+        error.code = "OFFLINE_CACHE_MISSING";
+        setInitializationError(error);
+      }
+      setLoading(false);
+      return;
+    }
 
     try {
       let nextWorkspace = await findUserWorkspace(supabase, userId);
@@ -194,6 +338,14 @@ export default function WorkspaceProvider({ children }) {
           readLocalWorkspaceSeed(),
         );
         nextWorkspace = await findUserWorkspace(supabase, userId);
+      }
+
+      workspaceRef.current = nextWorkspace;
+      setWorkspace(nextWorkspace);
+      const queueFlushed = await flushPendingChanges(nextWorkspace);
+      if (!queueFlushed) {
+        const remaining = await countOfflineOperations(userId, nextWorkspace.id);
+        if (remaining > 0) return;
       }
 
       const data = await fetchWorkspaceData(
@@ -209,36 +361,65 @@ export default function WorkspaceProvider({ children }) {
         throw error;
       }
 
-      workspaceRef.current = nextWorkspace;
-      setWorkspace(nextWorkspace);
-      commitWorkspaceData(data);
+      const hydratedData = {
+        ...data,
+        memories: await hydrateOfflineMemories(data.memories),
+      };
+      revokeOfflineMemoryUrls(memoriesRef.current);
+      commitWorkspaceData(hydratedData);
+      void cacheRemoteMemoryImages(data.memories, userId, nextWorkspace.id);
+      setOfflineMode(false);
       setSyncError(null);
     } catch (error) {
-      setInitializationError(normalizeError(error, "No se pudo abrir el workspace."));
+      if (cachedSnapshot) {
+        setOfflineMode(true);
+        if (!isNetworkError(error)) {
+          setSyncError("No se pudo actualizar el workspace; seguimos usando la copia local.");
+        }
+      } else {
+        setInitializationError(normalizeError(error, "No se pudo abrir el workspace."));
+      }
     } finally {
       setLoading(false);
     }
-  }, [commitWorkspaceData, userId]);
+  }, [commitWorkspaceData, flushPendingChanges, userId]);
 
   const refresh = useCallback(async () => {
     const currentWorkspace = workspaceRef.current;
     if (!supabase || !currentWorkspace) return false;
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      setOfflineMode(true);
+      return false;
+    }
 
     try {
+      if (!await flushPendingChanges(currentWorkspace)) return false;
       const data = await fetchWorkspaceData(
         supabase,
         currentWorkspace.id,
         getLocalDateKey(),
         memoriesRef.current,
       );
-      commitWorkspaceData(data);
+      const hydratedData = {
+        ...data,
+        memories: await hydrateOfflineMemories(data.memories),
+      };
+      revokeOfflineMemoryUrls(memoriesRef.current);
+      commitWorkspaceData(hydratedData);
+      void cacheRemoteMemoryImages(data.memories, userId, currentWorkspace.id);
+      setOfflineMode(false);
       setSyncError(null);
       return true;
-    } catch {
-      setSyncError("No pudimos actualizar los datos compartidos. Revisa tu conexión.");
+    } catch (error) {
+      if (isNetworkError(error)) {
+        setOfflineMode(true);
+        setSyncError(null);
+      } else {
+        setSyncError("No pudimos actualizar los datos compartidos.");
+      }
       return false;
     }
-  }, [commitWorkspaceData]);
+  }, [commitWorkspaceData, flushPendingChanges, userId]);
 
   useEffect(() => {
     const timerId = window.setTimeout(() => void loadWorkspace(), 0);
@@ -261,22 +442,49 @@ export default function WorkspaceProvider({ children }) {
       void refresh();
     }
 
+    const refreshWhenOnline = () => void refresh();
+    const markOffline = () => setOfflineMode(true);
+
     window.addEventListener("focus", refreshWhenVisible);
+    window.addEventListener("online", refreshWhenOnline);
+    window.addEventListener("offline", markOffline);
     document.addEventListener("visibilitychange", refreshWhenVisible);
     const intervalId = window.setInterval(refreshWhenVisible, 30000);
 
     return () => {
       window.removeEventListener("focus", refreshWhenVisible);
+      window.removeEventListener("online", refreshWhenOnline);
+      window.removeEventListener("offline", markOffline);
       document.removeEventListener("visibilitychange", refreshWhenVisible);
       window.clearInterval(intervalId);
     };
   }, [refresh]);
+
+  useEffect(() => {
+    if (!userId || !workspace || priorities.length !== 3) return undefined;
+    const timerId = window.setTimeout(() => {
+      void saveOfflineSnapshot(userId, workspace, {
+        albums,
+        memories,
+        notes,
+        priorities,
+        quickNote,
+        tasks,
+      });
+    }, 120);
+    return () => window.clearTimeout(timerId);
+  }, [albums, memories, notes, priorities, quickNote, tasks, userId, workspace]);
+
+  useEffect(() => {
+    if (userId) void requestPersistentStorage();
+  }, [userId]);
 
   useEffect(
     () => () => {
       if (priorityTimerRef.current) window.clearTimeout(priorityTimerRef.current);
       noteTimersRef.current.forEach((timerId) => window.clearTimeout(timerId));
       noteTimersRef.current.clear();
+      revokeOfflineMemoryUrls(memoriesRef.current);
     },
     [],
   );
@@ -311,6 +519,10 @@ export default function WorkspaceProvider({ children }) {
       const result = await performWrite(
         () => insertTask(supabase, currentWorkspace.id, userId, task),
         "No se pudo crear la tarea. Inténtalo nuevamente.",
+        {
+          fallbackData: task,
+          offlineOperation: { payload: { task }, type: "task.insert" },
+        },
       );
 
       if (result.error) {
@@ -399,17 +611,25 @@ export default function WorkspaceProvider({ children }) {
 
       if (Object.keys(databaseFields).length === 0) return true;
 
+      const updatedTask = {
+        ...previous,
+        ...nextFields,
+        updatedAt: new Date().toISOString(),
+      };
       commitTasks(
-        previousTasks.map((task) =>
-          task.id === taskId
-            ? { ...task, ...nextFields, updatedAt: new Date().toISOString() }
-            : task,
-        ),
+        previousTasks.map((task) => (task.id === taskId ? updatedTask : task)),
       );
 
       const result = await performWrite(
         () => updateTaskRemote(supabase, currentWorkspace.id, taskId, databaseFields),
         "No se pudo actualizar la tarea.",
+        {
+          fallbackData: updatedTask,
+          offlineOperation: {
+            payload: { fields: databaseFields, taskId },
+            type: "task.update",
+          },
+        },
       );
 
       if (result.error) {
@@ -432,15 +652,27 @@ export default function WorkspaceProvider({ children }) {
       if (!currentWorkspace || !previous) return false;
 
       const nextDone = !previous.done;
+      const updatedTask = {
+        ...previous,
+        done: nextDone,
+        updatedAt: new Date().toISOString(),
+      };
       commitTasks(
         tasksRef.current.map((task) =>
-          task.id === taskId ? { ...task, done: nextDone } : task,
+          task.id === taskId ? updatedTask : task,
         ),
       );
 
       const result = await performWrite(
         () => updateTaskRemote(supabase, currentWorkspace.id, taskId, { done: nextDone }),
         "No se pudo actualizar la tarea.",
+        {
+          fallbackData: updatedTask,
+          offlineOperation: {
+            payload: { fields: { done: nextDone }, taskId },
+            type: "task.update",
+          },
+        },
       );
 
       if (result.error) {
@@ -472,6 +704,9 @@ export default function WorkspaceProvider({ children }) {
       const result = await performWrite(
         () => deleteTaskRemote(supabase, currentWorkspace.id, taskId),
         "No se pudo eliminar la tarea.",
+        {
+          offlineOperation: { payload: { taskId }, type: "task.delete" },
+        },
       );
 
       if (result.error) {
@@ -493,6 +728,9 @@ export default function WorkspaceProvider({ children }) {
     const result = await performWrite(
       () => deleteCompletedTasksRemote(supabase, currentWorkspace.id),
       "No se pudieron limpiar las tareas terminadas.",
+      {
+        offlineOperation: { payload: {}, type: "task.clearCompleted" },
+      },
     );
 
     if (result.error) {
@@ -520,6 +758,10 @@ export default function WorkspaceProvider({ children }) {
     const result = await performWrite(
       () => insertNote(supabase, currentWorkspace.id, userId, note),
       "No se pudo crear la nota.",
+      {
+        fallbackData: note,
+        offlineOperation: { payload: { note }, type: "note.insert" },
+      },
     );
 
     if (result.error) return null;
@@ -535,14 +777,22 @@ export default function WorkspaceProvider({ children }) {
         return { data: null, error: new Error("Escribe un nombre para el álbum.") };
       }
 
+      const now = new Date().toISOString();
       const album = {
+        coverMemoryId: null,
+        createdAt: now,
         description: description.trim().slice(0, 500),
         id: crypto.randomUUID(),
         title: normalizedTitle,
+        updatedAt: now,
       };
       const result = await performWrite(
         () => insertAlbum(supabase, currentWorkspace.id, userId, album),
         "No se pudo crear el álbum.",
+        {
+          fallbackData: album,
+          offlineOperation: { payload: { album }, type: "album.insert" },
+        },
       );
 
       if (result.error) return result;
@@ -569,6 +819,7 @@ export default function WorkspaceProvider({ children }) {
       }
 
       const id = crypto.randomUUID();
+      const now = new Date().toISOString();
       const memory = {
         albumId,
         description: description.trim().slice(0, 4000),
@@ -578,23 +829,63 @@ export default function WorkspaceProvider({ children }) {
         title: normalizedTitle || null,
       };
 
-      const result = await performWrite(
-        async () => {
-          const image = await prepareMemoryImage(file);
-          return insertMemory(
-            supabase,
-            currentWorkspace.id,
-            userId,
-            memory,
-            image,
-          );
-        },
-        "No se pudo guardar el recuerdo. Revisa la fotografía e inténtalo otra vez.",
+      let image;
+      try {
+        image = await prepareMemoryImage(file);
+        await putOfflineImage({
+          blob: image.blob,
+          memoryId: id,
+          storagePath: memory.storagePath,
+          userId,
+          workspaceId: currentWorkspace.id,
+        });
+      } catch (error) {
+        return { data: null, error: normalizeError(error, "No se pudo preparar la foto.") };
+      }
+
+      const localMemory = {
+        ...memory,
+        createdAt: now,
+        fileSize: image.blob.size,
+        imageUrl: URL.createObjectURL(image.blob),
+        imageUrlExpiresAt: Number.POSITIVE_INFINITY,
+        mimeType: image.mimeType,
+        offlineImageUrl: true,
+        updatedAt: now,
+      };
+      commitMemories(
+        [localMemory, ...memoriesRef.current].sort((a, b) =>
+          b.memoryDate.localeCompare(a.memoryDate),
+        ),
       );
 
-      if (result.error) return result;
+      const result = await performWrite(
+        () => insertMemory(
+          supabase,
+          currentWorkspace.id,
+          userId,
+          memory,
+          image,
+        ),
+        "No se pudo guardar el recuerdo. Revisa la fotografía e inténtalo otra vez.",
+        {
+          fallbackData: localMemory,
+          offlineOperation: {
+            payload: { memory },
+            type: "memory.insert",
+          },
+        },
+      );
+
+      if (result.error) {
+        commitMemories(memoriesRef.current.filter((item) => item.id !== id));
+        URL.revokeObjectURL(localMemory.imageUrl);
+        await removeOfflineImage(id);
+        return result;
+      }
+      if (!result.queued) URL.revokeObjectURL(localMemory.imageUrl);
       commitMemories(
-        [result.data, ...memoriesRef.current].sort((a, b) =>
+        memoriesRef.current.map((item) => (item.id === id ? result.data : item)).sort((a, b) =>
           b.memoryDate.localeCompare(a.memoryDate),
         ),
       );
@@ -608,6 +899,17 @@ export default function WorkspaceProvider({ children }) {
       const currentWorkspace = workspaceRef.current;
       const memory = memoriesRef.current.find((item) => item.id === memoryId);
       if (!currentWorkspace || !memory) return false;
+      const previousMemories = memoriesRef.current;
+      const previousAlbums = albumsRef.current;
+
+      commitMemories(previousMemories.filter((item) => item.id !== memoryId));
+      commitAlbums(
+        previousAlbums.map((album) =>
+          album.coverMemoryId === memoryId
+            ? { ...album, coverMemoryId: null }
+            : album,
+        ),
+      );
 
       const result = await performWrite(
         () =>
@@ -618,21 +920,24 @@ export default function WorkspaceProvider({ children }) {
             memory.storagePath,
           ),
         "No se pudo eliminar el recuerdo.",
+        {
+          offlineOperation: {
+            payload: {
+              memoryId: memory.id,
+              storagePath: memory.storagePath,
+            },
+            type: "memory.delete",
+          },
+        },
       );
 
-      if (result.error) return false;
-      commitMemories(memoriesRef.current.filter((item) => item.id !== memoryId));
-      if (
-        albumsRef.current.some((album) => album.coverMemoryId === memoryId)
-      ) {
-        commitAlbums(
-          albumsRef.current.map((album) =>
-            album.coverMemoryId === memoryId
-              ? { ...album, coverMemoryId: null }
-              : album,
-          ),
-        );
+      if (result.error) {
+        commitMemories(previousMemories);
+        commitAlbums(previousAlbums);
+        return false;
       }
+      if (!result.queued) await removeOfflineImage(memoryId);
+      if (memory.offlineImageUrl && memory.imageUrl) URL.revokeObjectURL(memory.imageUrl);
       return true;
     },
     [commitAlbums, commitMemories, performWrite],
@@ -654,6 +959,17 @@ export default function WorkspaceProvider({ children }) {
         return false;
       }
 
+      const updatedAlbum = {
+        ...album,
+        coverMemoryId: memoryId,
+        updatedAt: new Date().toISOString(),
+      };
+      commitAlbums(
+        albumsRef.current.map((item) =>
+          item.id === albumId ? updatedAlbum : item,
+        ),
+      );
+
       const result = await performWrite(
         () =>
           updateAlbumCoverRemote(
@@ -663,9 +979,21 @@ export default function WorkspaceProvider({ children }) {
             memoryId,
           ),
         "No se pudo cambiar la portada del álbum.",
+        {
+          fallbackData: updatedAlbum,
+          offlineOperation: {
+            payload: { albumId, memoryId },
+            type: "album.cover",
+          },
+        },
       );
 
-      if (result.error) return false;
+      if (result.error) {
+        commitAlbums(
+          albumsRef.current.map((item) => (item.id === albumId ? album : item)),
+        );
+        return false;
+      }
       commitAlbums(
         albumsRef.current.map((item) =>
           item.id === albumId ? result.data : item,
@@ -685,16 +1013,42 @@ export default function WorkspaceProvider({ children }) {
         return { data: null, error: new Error("Escribe un nombre para el álbum.") };
       }
 
+      const fields = {
+        description: description.trim().slice(0, 500),
+        title: normalizedTitle,
+      };
+      const updatedAlbum = {
+        ...album,
+        ...fields,
+        updatedAt: new Date().toISOString(),
+      };
+      commitAlbums(
+        albumsRef.current.map((item) =>
+          item.id === albumId ? updatedAlbum : item,
+        ),
+      );
+
       const result = await performWrite(
         () =>
           updateAlbumRemote(supabase, currentWorkspace.id, albumId, {
-            description: description.trim().slice(0, 500),
-            title: normalizedTitle,
+            ...fields,
           }),
         "No se pudo actualizar el álbum.",
+        {
+          fallbackData: updatedAlbum,
+          offlineOperation: {
+            payload: { albumId, fields },
+            type: "album.update",
+          },
+        },
       );
 
-      if (result.error) return result;
+      if (result.error) {
+        commitAlbums(
+          albumsRef.current.map((item) => (item.id === albumId ? album : item)),
+        );
+        return result;
+      }
       commitAlbums(
         albumsRef.current.map((item) =>
           item.id === albumId ? result.data : item,
@@ -714,6 +1068,11 @@ export default function WorkspaceProvider({ children }) {
       const albumMemories = memoriesRef.current.filter(
         (memory) => memory.albumId === albumId,
       );
+      const previousAlbums = albumsRef.current;
+      const previousMemories = memoriesRef.current;
+      commitMemories(previousMemories.filter((memory) => memory.albumId !== albumId));
+      commitAlbums(previousAlbums.filter((item) => item.id !== albumId));
+
       const result = await performWrite(
         () =>
           deleteAlbumRemote(
@@ -723,13 +1082,29 @@ export default function WorkspaceProvider({ children }) {
             albumMemories.map((memory) => memory.storagePath),
           ),
         "No se pudo eliminar el álbum.",
+        {
+          offlineOperation: {
+            payload: {
+              albumId,
+              memoryIds: albumMemories.map((memory) => memory.id),
+              storagePaths: albumMemories.map((memory) => memory.storagePath),
+            },
+            type: "album.delete",
+          },
+        },
       );
 
-      if (result.error) return false;
-      commitMemories(
-        memoriesRef.current.filter((memory) => memory.albumId !== albumId),
-      );
-      commitAlbums(albumsRef.current.filter((item) => item.id !== albumId));
+      if (result.error) {
+        commitMemories(previousMemories);
+        commitAlbums(previousAlbums);
+        return false;
+      }
+      if (!result.queued) {
+        await removeOfflineImages(albumMemories.map((memory) => memory.id));
+      }
+      albumMemories.forEach((memory) => {
+        if (memory.offlineImageUrl && memory.imageUrl) URL.revokeObjectURL(memory.imageUrl);
+      });
       return true;
     },
     [commitAlbums, commitMemories, performWrite],
@@ -744,10 +1119,18 @@ export default function WorkspaceProvider({ children }) {
       noteBuffersRef.current.delete(noteId);
       noteTimersRef.current.delete(noteId);
       updateBufferedWriteCount();
+      const fallbackNote = notesRef.current.find((note) => note.id === noteId) ?? null;
 
       const result = await performWrite(
         () => updateNoteRemote(supabase, currentWorkspace.id, noteId, fields),
         "No se pudo guardar la nota. Tus cambios siguen visibles para que puedas reintentarlo.",
+        {
+          fallbackData: fallbackNote,
+          offlineOperation: {
+            payload: { fields, noteId },
+            type: "note.update",
+          },
+        },
       );
 
       if (result.error) {
@@ -819,6 +1202,9 @@ export default function WorkspaceProvider({ children }) {
       const result = await performWrite(
         () => deleteNoteRemote(supabase, currentWorkspace.id, noteId),
         "No se pudo eliminar la nota.",
+        {
+          offlineOperation: { payload: { noteId }, type: "note.delete" },
+        },
       );
 
       if (result.error) {
@@ -847,6 +1233,13 @@ export default function WorkspaceProvider({ children }) {
             getLocalDateKey(),
           ),
         "No se pudieron guardar las prioridades.",
+        {
+          fallbackData: snapshot,
+          offlineOperation: {
+            payload: { localDate: getLocalDateKey(), priorities: snapshot },
+            type: "priorities.save",
+          },
+        },
       );
       priorityNeedsRetryRef.current = Boolean(result.error);
     },
@@ -923,17 +1316,55 @@ export default function WorkspaceProvider({ children }) {
       if (!currentWorkspace) return false;
 
       const normalizedContent = content.slice(0, 10000);
+      const previousContent = quickNote;
+      commitQuickNote(normalizedContent);
       const result = await performWrite(
         () => updateQuickNote(supabase, currentWorkspace.id, normalizedContent),
         "No se pudo guardar la nota rápida.",
+        {
+          fallbackData: normalizedContent,
+          offlineOperation: {
+            payload: { content: normalizedContent },
+            type: "quickNote.update",
+          },
+        },
       );
 
-      if (result.error) return false;
+      if (result.error) {
+        commitQuickNote(previousContent);
+        return false;
+      }
       commitQuickNote(result.data);
       return true;
     },
-    [commitQuickNote, performWrite],
+    [commitQuickNote, performWrite, quickNote],
   );
+
+  useEffect(() => {
+    function flushBufferedChanges() {
+      noteTimersRef.current.forEach((timerId) => window.clearTimeout(timerId));
+      [...noteBuffersRef.current.keys()].forEach((noteId) => {
+        void flushNoteUpdate(noteId);
+      });
+
+      if (priorityTimerRef.current) {
+        window.clearTimeout(priorityTimerRef.current);
+        priorityTimerRef.current = null;
+        void flushPriorities(prioritiesRef.current);
+      }
+    }
+
+    function flushWhenHidden() {
+      if (document.visibilityState === "hidden") flushBufferedChanges();
+    }
+
+    window.addEventListener("pagehide", flushBufferedChanges);
+    document.addEventListener("visibilitychange", flushWhenHidden);
+    return () => {
+      window.removeEventListener("pagehide", flushBufferedChanges);
+      document.removeEventListener("visibilitychange", flushWhenHidden);
+    };
+  }, [flushNoteUpdate, flushPriorities]);
 
   const retrySync = useCallback(async () => {
     const pendingNoteIds = [...noteBuffersRef.current.keys()];
@@ -943,9 +1374,8 @@ export default function WorkspaceProvider({ children }) {
       operations.push(flushPriorities(prioritiesRef.current));
     }
 
-    if (operations.length === 0) return refresh();
-    await Promise.all(operations);
-    return true;
+    if (operations.length > 0) await Promise.all(operations);
+    return refresh();
   }, [flushNoteUpdate, flushPriorities, refresh]);
 
   const value = {
@@ -961,6 +1391,8 @@ export default function WorkspaceProvider({ children }) {
     memories,
     movePriority,
     notes,
+    offlineMode,
+    pendingSync,
     priorities,
     quickNote,
     refresh,
@@ -972,7 +1404,7 @@ export default function WorkspaceProvider({ children }) {
     removeTask,
     resetPriorities,
     saveQuickNote,
-    saving: pendingWrites > 0 || bufferedWrites > 0,
+    saving: pendingWrites > 0 || bufferedWrites > 0 || syncingOffline,
     setAlbumCover,
     syncError,
     tasks,
