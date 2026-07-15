@@ -7,6 +7,7 @@ import {
   getGhostPiece,
   hardDrop,
   movePiece,
+  softDrop,
   startGame,
   togglePause,
 } from "./blockEngine.js";
@@ -36,6 +37,16 @@ describe("block game engine", () => {
     expect(game.active.y).toBe(-1);
   });
 
+  it("no regala puntos por bajar o soltar una pieza", () => {
+    const game = startGame(() => 0);
+    const lowered = softDrop(game, () => 0);
+    const dropped = hardDrop(game, () => 0);
+
+    expect(lowered.active.y).toBe(game.active.y + 1);
+    expect(lowered.score).toBe(0);
+    expect(dropped.score).toBe(0);
+  });
+
   it("elimina líneas completas y suma puntos al soltar una pieza", () => {
     const board = createEmptyBoard();
     board[BOARD_ROWS - 1] = Array(BOARD_COLUMNS).fill("J");
@@ -61,7 +72,7 @@ describe("block game engine", () => {
     const result = finishLineClear(clearing);
 
     expect(result.lines).toBe(1);
-    expect(result.score).toBeGreaterThanOrEqual(100);
+    expect(result.score).toBe(100);
     expect(result.lastEffect).toBe("collapse");
     expect(result.status).toBe("running");
   });

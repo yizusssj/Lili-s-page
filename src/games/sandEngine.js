@@ -216,24 +216,19 @@ function lockSandPiece(game, random) {
 export function softDropSandPiece(game, random = Math.random) {
   if (game.status !== "running") return game;
   const moved = moveSandPiece(game, 0, 1);
-  if (moved !== game) return { ...moved, score: moved.score + 1 };
+  if (moved !== game) return moved;
   return lockSandPiece(game, random);
 }
 
 export function hardDropSandPiece(game, random = Math.random) {
   if (game.status !== "running") return game;
   let active = game.active;
-  let distance = 0;
 
   while (canPlaceSandPiece(game.board, { ...active, y: active.y + 1 })) {
     active = { ...active, y: active.y + 1 };
-    distance += 1;
   }
 
-  return lockSandPiece(
-    { ...game, active, score: game.score + distance * 2 },
-    random,
-  );
+  return lockSandPiece({ ...game, active }, random);
 }
 
 function moveParticle(board, from, to) {

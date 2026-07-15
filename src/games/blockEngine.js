@@ -232,7 +232,7 @@ export function finishLineClear(game) {
 export function softDrop(game, random = Math.random) {
   if (game.status !== "running") return game;
   const moved = movePiece(game, 0, 1);
-  if (moved !== game) return { ...moved, score: moved.score + 1 };
+  if (moved !== game) return moved;
   return lockPiece(game, random);
 }
 
@@ -245,17 +245,12 @@ export function tickGame(game, random = Math.random) {
 export function hardDrop(game, random = Math.random) {
   if (game.status !== "running") return game;
   let active = game.active;
-  let distance = 0;
 
   while (canPlace(game.board, { ...active, y: active.y + 1 })) {
     active = { ...active, y: active.y + 1 };
-    distance += 1;
   }
 
-  return lockPiece(
-    { ...game, active, score: game.score + distance * 2 },
-    random,
-  );
+  return lockPiece({ ...game, active }, random);
 }
 
 export function togglePause(game) {

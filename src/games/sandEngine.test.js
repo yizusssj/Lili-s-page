@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  advanceSandGame,
   clearConnectedSand,
   createSandBoard,
   createSandGame,
   hardDropSandPiece,
   SAND_COLUMNS,
   simulateSand,
+  softDropSandPiece,
   startSandGame,
   toggleSandPause,
 } from "./sandEngine.js";
@@ -47,8 +49,9 @@ describe("sandEngine", () => {
     expect(result.board[isolatedRow * SAND_COLUMNS]).toBe(2);
   });
 
-  it("convierte la pieza rígida en 144 granos al aterrizar", () => {
+  it("convierte la pieza rígida en 144 granos sin premiar la caída", () => {
     const game = startSandGame("normal", () => 0);
+    const lowered = softDropSandPiece(game, () => 0);
     const dropped = hardDropSandPiece(game, () => 0);
     const grains = dropped.board.reduce(
       (total, value) => total + Number(value !== 0),
@@ -59,7 +62,24 @@ describe("sandEngine", () => {
     expect(dropped.active).not.toBeNull();
     expect(dropped.effectId).toBe(1);
     expect(dropped.lastEffect).toBe("land");
-    expect(dropped.score).toBeGreaterThan(0);
+    expect(lowered.score).toBe(0);
+    expect(dropped.score).toBe(0);
+  });
+
+  it("suma puntos únicamente al completar caminos de arena", () => {
+    const game = startSandGame("normal", () => 0);
+    const board = createSandBoard();
+    const bottomRow = 119;
+
+    for (let column = 0; column < SAND_COLUMNS; column += 1) {
+      board[bottomRow * SAND_COLUMNS + column] = 3;
+    }
+
+    const scored = advanceSandGame({ ...game, board }, 32, () => 0);
+
+    expect(scored.paths).toBe(1);
+    expect(scored.combo).toBe(1);
+    expect(scored.score).toBe(75);
   });
 
   it("respeta la dificultad elegida y permite pausar", () => {
