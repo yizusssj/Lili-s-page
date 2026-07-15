@@ -5,7 +5,6 @@ import {
   CircleDot,
   Gamepad2,
   Grid3X3,
-  Lock,
   MoonStar,
   Sparkles,
   Trophy,
@@ -13,7 +12,9 @@ import {
   WifiOff,
 } from "lucide-react";
 import FallingBlocks from "../games/FallingBlocks.jsx";
+import MergeGame from "../games/MergeGame.jsx";
 import SandGame from "../games/SandGame.jsx";
+import SnakeGame from "../games/SnakeGame.jsx";
 
 const GAMES = [
   {
@@ -37,7 +38,7 @@ const GAMES = [
     description: "Crece, esquiva tu cola y consigue el récord.",
     id: "snake",
     icon: CircleDot,
-    status: "Próximamente",
+    status: "Nuevo",
     title: "Snake",
   },
   {
@@ -45,7 +46,7 @@ const GAMES = [
     description: "Combina fichas y alcanza la pieza más alta.",
     id: "merge",
     icon: Sparkles,
-    status: "Próximamente",
+    status: "Nuevo",
     title: "2048",
   },
 ];
@@ -85,6 +86,22 @@ export default function Arcade() {
     );
   }
 
+  if (activeGame === "snake") {
+    return (
+      <FullscreenGame>
+        <SnakeGame onBack={() => setActiveGame(null)} />
+      </FullscreenGame>
+    );
+  }
+
+  if (activeGame === "merge") {
+    return (
+      <FullscreenGame>
+        <MergeGame onBack={() => setActiveGame(null)} />
+      </FullscreenGame>
+    );
+  }
+
   return (
     <div className="arcadePage">
       <section className="arcadeHero">
@@ -119,20 +136,18 @@ export default function Arcade() {
             <span>Tu colección</span>
             <h2 id="arcade-library-title">Elige un juego</h2>
           </div>
-          <small>2 disponibles · más en camino</small>
+          <small>4 disponibles</small>
         </div>
 
         <div className="arcadeGameGrid">
           {GAMES.map((game) => {
             const Icon = game.icon;
-            const available = ["sand", "blocks"].includes(game.id);
             return (
               <button
                 type="button"
                 key={game.id}
-                className={`arcadeGameCard${available ? " arcadeGameCardAvailable" : ""}`}
-                onClick={available ? () => setActiveGame(game.id) : undefined}
-                disabled={!available}
+                className="arcadeGameCard arcadeGameCardAvailable"
+                onClick={() => setActiveGame(game.id)}
                 style={{ "--game-accent": game.accent }}
               >
                 <span className="arcadeGameArtwork">
@@ -141,14 +156,13 @@ export default function Arcade() {
                 </span>
                 <span className="arcadeGameCopy">
                   <span className="arcadeGameStatus">
-                    {!available && <Lock aria-hidden="true" size={12} />}
                     {game.status}
                   </span>
                   <strong>{game.title}</strong>
                   <span>{game.description}</span>
                 </span>
                 <span className="arcadeGameAction" aria-hidden="true">
-                  {available ? <ArrowRight size={18} /> : <Sparkles size={17} />}
+                  <ArrowRight size={18} />
                 </span>
               </button>
             );

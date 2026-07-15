@@ -480,7 +480,7 @@ body.arcadeGameActive {
 
 .arcadeGameGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
 }
 
@@ -517,6 +517,14 @@ body.arcadeGameActive {
 
 .arcadeGameCardAvailable:nth-child(2) {
   animation-delay: 70ms;
+}
+
+.arcadeGameCardAvailable:nth-child(3) {
+  animation-delay: 140ms;
+}
+
+.arcadeGameCardAvailable:nth-child(4) {
+  animation-delay: 210ms;
 }
 
 .arcadeGameCardAvailable:hover {
@@ -1323,6 +1331,440 @@ body.arcadeGameActive {
     inset 0 -2px 3px rgba(0, 0, 0, 0.14);
 }
 
+/* Snake y 2048 */
+.snakeGameShell {
+  background:
+    radial-gradient(circle at 16% 12%, rgba(83, 220, 173, 0.28), transparent 29%),
+    radial-gradient(circle at 86% 78%, rgba(159, 228, 245, 0.25), transparent 34%),
+    rgba(255, 255, 255, 0.42);
+}
+
+.snakeGameHeading > span {
+  color: #218263;
+}
+
+.mergeGameShell {
+  background:
+    radial-gradient(circle at 17% 13%, rgba(255, 207, 98, 0.27), transparent 30%),
+    radial-gradient(circle at 84% 78%, rgba(255, 164, 125, 0.2), transparent 34%),
+    rgba(255, 255, 255, 0.42);
+}
+
+.mergeGameHeading > span {
+  color: #a96515;
+}
+
+.squareGameLayout {
+  grid-template-columns: minmax(300px, 410px) 220px;
+  align-items: center;
+}
+
+.snakeGameBoard,
+.mergeGameBoard {
+  width: min(100%, 410px);
+  aspect-ratio: 1;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 24px;
+  box-shadow:
+    0 28px 62px rgba(31, 34, 52, 0.27),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+}
+
+.snakeGameBoard:active,
+.mergeGameBoard:active {
+  cursor: grabbing;
+}
+
+.snakeGameBoard {
+  padding: 9px;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(48, 166, 126, 0.08), transparent 58%),
+    linear-gradient(155deg, #111b1c, #091113 72%, #10191c);
+}
+
+.snakeGameBoard::before,
+.mergeGameBoard::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(125deg, rgba(255, 255, 255, 0.08), transparent 31% 68%, rgba(255, 255, 255, 0.025));
+}
+
+.snakeGameGrid {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(20, minmax(0, 1fr));
+  grid-template-rows: repeat(20, minmax(0, 1fr));
+  gap: 1px;
+}
+
+.snakeCell {
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+  border-radius: 28%;
+  background: rgba(255, 255, 255, 0.018);
+  transition: background 70ms linear, box-shadow 70ms linear, transform 70ms linear;
+}
+
+.snakeBody,
+.snakeHead {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background:
+    linear-gradient(145deg, rgba(161, 247, 213, 0.96), rgba(43, 185, 139, 0.96));
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.48),
+    0 0 7px rgba(64, 220, 167, 0.28);
+  transform: scale(0.94);
+}
+
+.snakeBody {
+  border-radius: 38%;
+}
+
+.snakeHead {
+  z-index: 2;
+  border-radius: 34%;
+  background: linear-gradient(145deg, #c8ffe9, #35c795 68%, #1b9b74);
+  box-shadow:
+    inset 0 2px 2px rgba(255, 255, 255, 0.58),
+    0 0 10px rgba(73, 230, 177, 0.5);
+  transform: scale(1.08);
+}
+
+.snakeHead::before,
+.snakeHead::after {
+  content: "";
+  width: 18%;
+  height: 18%;
+  position: absolute;
+  border-radius: 50%;
+  background: #102c27;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+
+.snakeHeadright::before,
+.snakeHeadright::after {
+  right: 12%;
+}
+.snakeHeadright::before { top: 18%; }
+.snakeHeadright::after { bottom: 18%; }
+.snakeHeadleft::before,
+.snakeHeadleft::after { left: 12%; }
+.snakeHeadleft::before { top: 18%; }
+.snakeHeadleft::after { bottom: 18%; }
+.snakeHeadup::before,
+.snakeHeadup::after { top: 12%; }
+.snakeHeadup::before { left: 18%; }
+.snakeHeadup::after { right: 18%; }
+.snakeHeaddown::before,
+.snakeHeaddown::after { bottom: 12%; }
+.snakeHeaddown::before { left: 18%; }
+.snakeHeaddown::after { right: 18%; }
+
+.snakeFood {
+  z-index: 2;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff3bc 0 12%, #ff8b9d 27%, #ef476f 68%, #ad2449);
+  box-shadow:
+    0 0 7px rgba(255, 96, 128, 0.72),
+    0 0 14px rgba(255, 96, 128, 0.24);
+  transform: scale(0.78);
+  animation: snakeFoodPulse 1s ease-in-out infinite;
+}
+
+.snakeFood::after {
+  content: "";
+  width: 35%;
+  height: 30%;
+  position: absolute;
+  top: -20%;
+  left: 53%;
+  border-radius: 90% 10% 90% 10%;
+  background: #75df9e;
+  transform: rotate(-28deg);
+}
+
+.snakeGameOverlay,
+.mergeGameOverlay {
+  inset: 9px;
+  z-index: 8;
+  border-radius: 17px;
+}
+
+.snakeGameOverlay {
+  background: rgba(7, 17, 18, 0.73);
+}
+
+.snakeGameOverlay > svg {
+  color: #75e0b8;
+}
+
+.snakeEatBurst {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.snakeEatBurst strong {
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: 999px;
+  background: rgba(9, 22, 21, 0.68);
+  color: #caffec;
+  font-size: 11px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.25);
+  animation: snakeScoreRise 580ms ease-out both;
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+}
+
+.snakeEatBurst i {
+  width: 5px;
+  height: 5px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 50%;
+  background: #b6ffe2;
+  box-shadow: 0 0 9px #52dda8;
+  animation: snakeEatParticle 620ms ease-out both;
+}
+
+.snakeEatBurst i:nth-child(1) { --eat-angle: 0deg; }
+.snakeEatBurst i:nth-child(2) { --eat-angle: 36deg; }
+.snakeEatBurst i:nth-child(3) { --eat-angle: 72deg; }
+.snakeEatBurst i:nth-child(4) { --eat-angle: 108deg; }
+.snakeEatBurst i:nth-child(5) { --eat-angle: 144deg; }
+.snakeEatBurst i:nth-child(6) { --eat-angle: 180deg; }
+.snakeEatBurst i:nth-child(7) { --eat-angle: 216deg; }
+.snakeEatBurst i:nth-child(8) { --eat-angle: 252deg; }
+.snakeEatBurst i:nth-child(9) { --eat-angle: 288deg; }
+.snakeEatBurst i:nth-child(10) { --eat-angle: 324deg; }
+
+.snakeGameBoardCrash {
+  animation: snakeCrash 360ms ease-out both;
+}
+
+.mergeGameBoard {
+  padding: 12px;
+  background:
+    radial-gradient(circle at 82% 12%, rgba(255, 235, 173, 0.34), transparent 34%),
+    linear-gradient(145deg, #d7bd9d, #b99b7c 72%, #a9886d);
+}
+
+.mergeGameGrid {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mergeGameCell {
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  border-radius: 15px;
+  background: rgba(104, 78, 58, 0.22);
+  box-shadow:
+    inset 0 2px 5px rgba(86, 60, 42, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.mergeGameTile {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: inherit;
+  background: #eee4da;
+  color: #66594e;
+  box-shadow:
+    inset 0 2px 1px rgba(255, 255, 255, 0.48),
+    0 7px 16px rgba(80, 52, 34, 0.14);
+  font-size: clamp(20px, 6.5vw, 38px);
+  font-weight: 850;
+  letter-spacing: -0.055em;
+  animation: mergeTileArrive 190ms cubic-bezier(0.2, 0.88, 0.22, 1) both;
+}
+
+.mergeGameTile[data-value="4"] { background: #eadbc6; }
+.mergeGameTile[data-value="8"] { background: #f3b878; color: #fffaf2; }
+.mergeGameTile[data-value="16"] { background: #f29a64; color: #fffaf2; }
+.mergeGameTile[data-value="32"] { background: #ef785e; color: #fffaf2; }
+.mergeGameTile[data-value="64"] { background: #eb5f46; color: #fffaf2; }
+.mergeGameTile[data-value="128"] { background: #e9cc68; color: #fffdf4; font-size: clamp(18px, 5.8vw, 33px); }
+.mergeGameTile[data-value="256"] { background: #e5bc50; color: #fffdf4; font-size: clamp(18px, 5.8vw, 33px); }
+.mergeGameTile[data-value="512"] { background: #dfac38; color: #fffdf4; font-size: clamp(18px, 5.8vw, 33px); }
+.mergeGameTile[data-value="1024"] { background: #d99a2c; color: #fffdf4; font-size: clamp(15px, 5vw, 28px); }
+.mergeGameTile[data-value="2048"] {
+  background: linear-gradient(145deg, #ffe88f, #e7a91e);
+  color: #fffef7;
+  font-size: clamp(15px, 5vw, 28px);
+  box-shadow:
+    inset 0 2px 1px rgba(255, 255, 255, 0.62),
+    0 0 22px rgba(255, 221, 86, 0.68);
+}
+.mergeGameTile[data-value="4096"],
+.mergeGameTile[data-value="8192"] {
+  background: linear-gradient(145deg, #8f78e8, #5c43b5);
+  color: white;
+  font-size: clamp(14px, 4.5vw, 25px);
+}
+
+.mergeGameGain {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 6;
+  padding: 6px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 999px;
+  background: rgba(80, 56, 40, 0.58);
+  color: #fff9df;
+  box-shadow: 0 10px 25px rgba(78, 46, 27, 0.23);
+  font-size: 11px;
+  font-weight: 820;
+  animation: mergeGainRise 650ms ease-out both;
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+}
+
+.mergeGameBoardMerged {
+  animation: mergeBoardPulse 240ms ease-out both;
+}
+
+.mergeGameOverlay {
+  background: rgba(73, 54, 42, 0.72);
+}
+
+.mergeGameOverlay > svg {
+  color: #ffe47e;
+}
+
+.arcadeGameScreen .squareGameLayout {
+  grid-template-columns: minmax(280px, 430px) minmax(170px, 210px);
+}
+
+.arcadeGameScreen .snakeGameBoard,
+.arcadeGameScreen .mergeGameBoard {
+  width: min(100%, 430px, calc(100dvh - 178px));
+  max-height: 100%;
+}
+
+.arcadeGameScreen .blockGameShellPlaying .snakeGameBoard,
+.arcadeGameScreen .blockGameShellPlaying .mergeGameBoard {
+  width: min(100%, 460px, calc(100dvh - 88px));
+}
+
+@keyframes snakeFoodPulse {
+  0%, 100% { filter: brightness(1); transform: scale(0.74); }
+  50% { filter: brightness(1.18); transform: scale(0.92); }
+}
+
+@keyframes snakeScoreRise {
+  0% { opacity: 0; transform: translateY(8px) scale(0.72); }
+  30% { opacity: 1; transform: translateY(0) scale(1.08); }
+  100% { opacity: 0; transform: translateY(-20px) scale(0.94); }
+}
+
+@keyframes snakeEatParticle {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--eat-angle)) translateX(0) scale(0.3); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--eat-angle)) translateX(48px) scale(0.1); }
+}
+
+@keyframes snakeCrash {
+  0%, 100% { filter: brightness(1); transform: translateX(0); }
+  24% { filter: brightness(1.4); transform: translateX(-4px); }
+  48% { transform: translateX(4px); }
+  70% { transform: translateX(-2px); }
+}
+
+@keyframes mergeTileArrive {
+  from { filter: brightness(1.2); opacity: 0.2; transform: scale(0.58); }
+  68% { opacity: 1; transform: scale(1.07); }
+  to { filter: brightness(1); opacity: 1; transform: scale(1); }
+}
+
+@keyframes mergeGainRise {
+  0% { opacity: 0; transform: translateY(8px) scale(0.7); }
+  28% { opacity: 1; transform: translateY(0) scale(1.08); }
+  100% { opacity: 0; transform: translateY(-20px) scale(0.95); }
+}
+
+@keyframes mergeBoardPulse {
+  0%, 100% { filter: brightness(1); transform: scale(1); }
+  45% { filter: brightness(1.08); transform: scale(1.006); }
+}
+
+@media (max-width: 720px) {
+  .arcadeGameScreen .squareGameLayout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 7px;
+  }
+
+  .arcadeGameScreen .snakeGameBoard,
+  .arcadeGameScreen .mergeGameBoard {
+    width: min(calc(100vw - 24px), 390px, calc(100dvh - 202px));
+  }
+
+  .arcadeGameScreen .blockGameShellPlaying .snakeGameBoard,
+  .arcadeGameScreen .blockGameShellPlaying .mergeGameBoard {
+    width: min(calc(100vw - 24px), 410px, calc(100dvh - 112px));
+  }
+
+  .snakeGameBoard {
+    padding: 7px;
+    border-radius: 20px;
+  }
+
+  .mergeGameBoard {
+    padding: 8px;
+    border-radius: 20px;
+  }
+
+  .mergeGameGrid {
+    gap: 7px;
+  }
+
+  .mergeGameCell {
+    border-radius: 12px;
+  }
+}
+
+@media (max-height: 560px) and (orientation: landscape) {
+  .arcadeGameScreen .snakeGameBoard,
+  .arcadeGameScreen .mergeGameBoard,
+  .arcadeGameScreen .blockGameShellPlaying .snakeGameBoard,
+  .arcadeGameScreen .blockGameShellPlaying .mergeGameBoard {
+    width: min(54vh, 34vw);
+  }
+}
+
 @keyframes arcadeCardArrive {
   from {
     opacity: 0;
@@ -1636,7 +2078,14 @@ body.arcadeGameActive {
   .blockGameBoardClearing,
   .blockGameMetricValue,
   .sandGameCombo,
-  .blockGameClearEffect > span {
+  .blockGameClearEffect > span,
+  .snakeFood,
+  .snakeEatBurst strong,
+  .snakeEatBurst i,
+  .snakeGameBoardCrash,
+  .mergeGameTile,
+  .mergeGameGain,
+  .mergeGameBoardMerged {
     animation: none;
   }
 
