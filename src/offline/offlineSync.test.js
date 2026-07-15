@@ -14,6 +14,7 @@ const repository = vi.hoisted(() => ({
   savePriorities: vi.fn(),
   updateAlbum: vi.fn(),
   updateAlbumCover: vi.fn(),
+  updateMemory: vi.fn(),
   updateNote: vi.fn(),
   updateQuickNote: vi.fn(),
   updateTask: vi.fn(async (_client, _workspaceId, taskId, fields) => ({
@@ -79,6 +80,30 @@ describe("offline synchronization", () => {
     expect(repository.insertTask.mock.invocationCallOrder[0])
       .toBeLessThan(repository.updateTask.mock.invocationCallOrder[0]);
     expect(progress).toEqual([1, 0]);
+    expect(await countOfflineOperations(userId, workspaceId)).toBe(0);
+  });
+
+  it("sincroniza los detalles editados de una fotografía", async () => {
+    const userId = "memory-sync-user";
+    const workspaceId = "memory-sync-workspace";
+    await enqueueOfflineOperation({
+      payload: {
+        fields: { description: "Un día bonito", title: "Paseo" },
+        memoryId: "memory-1",
+      },
+      type: "memory.update",
+      userId,
+      workspaceId,
+    });
+
+    await flushOfflineOperations({ name: "supabase-client" }, userId, workspaceId);
+
+    expect(repository.updateMemory).toHaveBeenCalledWith(
+      expect.anything(),
+      workspaceId,
+      "memory-1",
+      { description: "Un día bonito", title: "Paseo" },
+    );
     expect(await countOfflineOperations(userId, workspaceId)).toBe(0);
   });
 });

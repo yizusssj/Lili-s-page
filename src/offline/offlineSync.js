@@ -20,6 +20,7 @@ import {
   updateAlbumCover,
   updateNote,
   updateQuickNote,
+  updateMemory,
   updateTask,
 } from "../workspace/workspaceRepository.js";
 
@@ -82,6 +83,8 @@ async function executeOperation(client, operation) {
       );
       await removeOfflineImage(payload.memoryId);
       return null;
+    case "memory.update":
+      return updateMemory(client, workspaceId, payload.memoryId, payload.fields);
     case "priorities.save":
       return savePriorities(client, workspaceId, payload.priorities, payload.localDate);
     case "quickNote.update":

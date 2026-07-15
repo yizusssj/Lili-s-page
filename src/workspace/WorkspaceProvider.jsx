@@ -46,6 +46,7 @@ import {
   updateAlbumCover as updateAlbumCoverRemote,
   updateAlbum as updateAlbumRemote,
   updateNote as updateNoteRemote,
+  updateMemory as updateMemoryRemote,
   updateQuickNote,
   updateTask as updateTaskRemote,
 } from "./workspaceRepository.js";
@@ -863,7 +864,7 @@ export default function WorkspaceProvider({ children }) {
   );
 
   const addMemory = useCallback(
-    async ({ albumId, description, file, memoryDate, title }) => {
+    async ({ albumId, description, file, memoryDate, sortOrder, title }) => {
       const currentWorkspace = workspaceRef.current;
       const normalizedTitle = title.trim().slice(0, 120);
       const validMemoryDate = /^\d{4}-\d{2}-\d{2}$/.test(memoryDate)
@@ -880,11 +881,15 @@ export default function WorkspaceProvider({ children }) {
 
       const id = crypto.randomUUID();
       const now = new Date().toISOString();
+      const fallbackSortOrder = Date.now() * 1000;
       const memory = {
         albumId,
         description: description.trim().slice(0, 4000),
         id,
         memoryDate,
+        sortOrder: Number.isSafeInteger(sortOrder) && sortOrder > 0
+          ? sortOrder
+          : fallbackSortOrder,
         storagePath: `${currentWorkspace.id}/${id}.jpg`,
         title: normalizedTitle || null,
       };
@@ -1001,6 +1006,61 @@ export default function WorkspaceProvider({ children }) {
       return true;
     },
     [commitAlbums, commitMemories, performWrite],
+  );
+
+  const updateMemory = useCallback(
+    async (memoryId, fields) => {
+      const currentWorkspace = workspaceRef.current;
+      const memory = memoriesRef.current.find((item) => item.id === memoryId);
+      if (!currentWorkspace || !memory) {
+        return { data: null, error: new Error("No se encontró el recuerdo.") };
+      }
+
+      const normalizedFields = {
+        description: String(fields.description ?? "").trim().slice(0, 4000),
+        title: String(fields.title ?? "").trim().slice(0, 120) || null,
+      };
+      const updatedMemory = {
+        ...memory,
+        ...normalizedFields,
+        updatedAt: new Date().toISOString(),
+      };
+      const previousMemories = memoriesRef.current;
+      commitMemories(
+        previousMemories.map((item) => (item.id === memoryId ? updatedMemory : item)),
+      );
+
+      const result = await performWrite(
+        () => updateMemoryRemote(
+          supabase,
+          currentWorkspace.id,
+          memoryId,
+          normalizedFields,
+        ),
+        "No se pudieron actualizar los detalles del recuerdo.",
+        {
+          fallbackData: updatedMemory,
+          offlineOperation: {
+            payload: { fields: normalizedFields, memoryId },
+            type: "memory.update",
+          },
+        },
+      );
+
+      if (result.error) {
+        commitMemories(previousMemories);
+        return result;
+      }
+
+      const savedMemory = result.queued
+        ? updatedMemory
+        : { ...updatedMemory, ...result.data };
+      commitMemories(
+        memoriesRef.current.map((item) => (item.id === memoryId ? savedMemory : item)),
+      );
+      return { ...result, data: savedMemory };
+    },
+    [commitMemories, performWrite],
   );
 
   const setAlbumCover = useCallback(
@@ -1469,6 +1529,7 @@ export default function WorkspaceProvider({ children }) {
     syncError,
     tasks,
     togglePriority,
+    updateMemory,
     toggleTask,
     toggleTaskOccurrence,
     updateTask,

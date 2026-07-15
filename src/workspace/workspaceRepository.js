@@ -67,6 +67,7 @@ function mapMemory(row, image = {}) {
     title: row.title,
     description: row.description,
     memoryDate: row.memory_date,
+    sortOrder: Number(row.sort_order),
     storagePath: row.storage_path,
     mimeType: row.mime_type,
     fileSize: row.file_size,
@@ -76,6 +77,8 @@ function mapMemory(row, image = {}) {
     imageUrlExpiresAt: image.expiresAt ?? 0,
   };
 }
+
+const MEMORY_SELECT = "id, album_id, title, description, memory_date, sort_order, storage_path, mime_type, file_size, created_at, updated_at";
 
 async function attachMemoryUrls(client, rows, existingMemories) {
   const now = Date.now();
@@ -201,12 +204,9 @@ export async function fetchWorkspaceData(
       .order("created_at", { ascending: false }),
     client
       .from("memories")
-      .select(
-        "id, album_id, title, description, memory_date, storage_path, mime_type, file_size, created_at, updated_at",
-      )
+      .select(MEMORY_SELECT)
       .eq("workspace_id", workspaceId)
-      .order("memory_date", { ascending: false })
-      .order("created_at", { ascending: false }),
+      .order("sort_order", { ascending: true }),
   ]);
 
   throwIfError(tasksResult.error, "No se pudieron cargar las tareas.");
@@ -341,14 +341,13 @@ export async function insertMemory(
         file_size: image.blob.size,
         id: memory.id,
         memory_date: memory.memoryDate,
+        sort_order: memory.sortOrder,
         mime_type: image.mimeType,
         storage_path: memory.storagePath,
         title: memory.title,
         workspace_id: workspaceId,
       }, { onConflict: "id" })
-      .select(
-        "id, album_id, title, description, memory_date, storage_path, mime_type, file_size, created_at, updated_at",
-      )
+      .select(MEMORY_SELECT)
       .single();
 
     throwIfError(error, "No se pudo guardar el recuerdo.");
@@ -366,6 +365,27 @@ export async function insertMemory(
     expiresAt: signedData?.signedUrl ? Date.now() + MEMORY_URL_SECONDS * 1000 : 0,
     signedUrl: signedData?.signedUrl,
   });
+}
+
+export async function updateMemory(client, workspaceId, memoryId, fields) {
+  const payload = {};
+  if (Object.hasOwn(fields, "title")) payload.title = fields.title;
+  if (Object.hasOwn(fields, "description")) payload.description = fields.description;
+
+  const { data, error } = await client
+    .from("memories")
+    .update(payload)
+    .eq("workspace_id", workspaceId)
+    .eq("id", memoryId)
+    .select("title, description, updated_at")
+    .single();
+
+  throwIfError(error, "No se pudieron actualizar los detalles del recuerdo.");
+  return {
+    description: data.description,
+    title: data.title,
+    updatedAt: data.updated_at,
+  };
 }
 
 export async function deleteMemory(client, workspaceId, memoryId, storagePath) {

@@ -116,7 +116,7 @@ function WorkspaceHarness({ children, initialData }) {
       setAlbums((current) => [album, ...current]);
       return { data: album, error: null };
     },
-    addMemory: async ({ albumId, description, file, memoryDate, title }) => {
+    addMemory: async ({ albumId, description, file, memoryDate, sortOrder, title }) => {
       const now = new Date().toISOString();
       const memory = {
         id: crypto.randomUUID(),
@@ -124,6 +124,7 @@ function WorkspaceHarness({ children, initialData }) {
         title,
         description,
         memoryDate,
+        sortOrder: sortOrder ?? Date.now() * 1000,
         storagePath: `workspace-test/${crypto.randomUUID()}.jpg`,
         mimeType: "image/jpeg",
         fileSize: file.size,
@@ -223,6 +224,20 @@ function WorkspaceHarness({ children, initialData }) {
         };
       }));
       return true;
+    },
+    updateMemory: async (memoryId, fields) => {
+      let updatedMemory = null;
+      setMemories((current) => current.map((memory) => {
+        if (memory.id !== memoryId) return memory;
+        updatedMemory = {
+          ...memory,
+          description: String(fields.description ?? "").trim(),
+          title: String(fields.title ?? "").trim() || null,
+          updatedAt: new Date().toISOString(),
+        };
+        return updatedMemory;
+      }));
+      return { data: updatedMemory, error: null };
     },
     updateTask,
     updateNoteDraft,

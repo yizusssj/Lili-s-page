@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { styles } from "../app/styles.jsx";
 import Block from "../components/Block.jsx";
+import MemoryCollage from "../components/MemoryCollage.jsx";
 import SectionTitle from "../components/SectionTitle.jsx";
 import { formatCalendarDate, getLocalDateKey } from "../utils/date.js";
 import { validateMemoryImage } from "../utils/images.js";
@@ -42,6 +43,7 @@ export default function Memories() {
     removeMemory,
     setAlbumCover,
     updateAlbum,
+    updateMemory,
   } = useWorkspace();
   const [selectedAlbumId, setSelectedAlbumId] = useState(null);
   const [albumFormOpen, setAlbumFormOpen] = useState(false);
@@ -56,15 +58,19 @@ export default function Memories() {
   const [savingAlbum, setSavingAlbum] = useState(false);
   const [deletingAlbum, setDeletingAlbum] = useState(false);
   const [memoryFormOpen, setMemoryFormOpen] = useState(false);
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
   const [memoryDate, setMemoryDate] = useState(getLocalDateKey);
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]);
   const [formError, setFormError] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({ completed: 0, total: 0 });
   const [deleting, setDeleting] = useState(false);
   const [changingCover, setChangingCover] = useState(false);
   const [selectedMemoryId, setSelectedMemoryId] = useState(null);
+  const [editingMemoryDetails, setEditingMemoryDetails] = useState(false);
+  const [editedMemoryTitle, setEditedMemoryTitle] = useState("");
+  const [editedMemoryDescription, setEditedMemoryDescription] = useState("");
+  const [memoryDetailsError, setMemoryDetailsError] = useState("");
+  const [savingMemoryDetails, setSavingMemoryDetails] = useState(false);
   const closeButtonRef = useRef(null);
   const composerCloseRef = useRef(null);
   const albumEditorCloseRef = useRef(null);
@@ -73,7 +79,18 @@ export default function Memories() {
   const selectedMemory =
     memories.find((memory) => memory.id === selectedMemoryId) ?? null;
   const albumMemories = useMemo(
-    () => memories.filter((memory) => memory.albumId === selectedAlbumId),
+    () => memories
+      .filter((memory) => memory.albumId === selectedAlbumId)
+      .sort((first, second) => {
+        const firstOrder = Number.isSafeInteger(first.sortOrder)
+          ? first.sortOrder
+          : Date.parse(first.createdAt ?? "") * 1000 || 0;
+        const secondOrder = Number.isSafeInteger(second.sortOrder)
+          ? second.sortOrder
+          : Date.parse(second.createdAt ?? "") * 1000 || 0;
+        return firstOrder - secondOrder
+          || (first.createdAt ?? "").localeCompare(second.createdAt ?? "");
+      }),
     [memories, selectedAlbumId],
   );
   const albumCards = useMemo(
@@ -98,13 +115,19 @@ export default function Memories() {
       }),
     [albums, memories],
   );
-  const previewUrl = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
+  const previewItems = useMemo(
+    () => files.map((selectedFile) => ({
+      file: selectedFile,
+      url: URL.createObjectURL(selectedFile),
+    })),
+    [files],
+  );
 
   useEffect(
     () => () => {
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      previewItems.forEach((item) => URL.revokeObjectURL(item.url));
     },
-    [previewUrl],
+    [previewItems],
   );
 
   useEffect(() => {
@@ -115,7 +138,16 @@ export default function Memories() {
     const focusTimer = window.setTimeout(() => closeButtonRef.current?.focus(), 0);
 
     function handleKeyDown(event) {
-      if (event.key === "Escape" && !deleting) setSelectedMemoryId(null);
+      if (
+        event.key === "Escape"
+        && !deleting
+        && !changingCover
+        && !savingMemoryDetails
+      ) {
+        setEditingMemoryDetails(false);
+        setMemoryDetailsError("");
+        setSelectedMemoryId(null);
+      }
     }
 
     window.addEventListener("keydown", handleKeyDown);
@@ -124,7 +156,7 @@ export default function Memories() {
       window.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = previousOverflow;
     };
-  }, [deleting, selectedMemory]);
+  }, [changingCover, deleting, savingMemoryDetails, selectedMemory]);
 
   useEffect(() => {
     if (!memoryFormOpen) return undefined;
@@ -134,11 +166,10 @@ export default function Memories() {
 
     function handleKeyDown(event) {
       if (event.key === "Escape" && !uploading) {
-        setTitle("");
-        setDescription("");
         setMemoryDate(getLocalDateKey());
-        setFile(null);
+        setFiles([]);
         setFormError("");
+        setUploadProgress({ completed: 0, total: 0 });
         setMemoryFormOpen(false);
       }
     }
@@ -292,11 +323,10 @@ export default function Memories() {
   }
 
   function resetMemoryForm() {
-    setTitle("");
-    setDescription("");
     setMemoryDate(getLocalDateKey());
-    setFile(null);
+    setFiles([]);
     setFormError("");
+    setUploadProgress({ completed: 0, total: 0 });
   }
 
   function closeMemoryForm() {
@@ -315,26 +345,33 @@ export default function Memories() {
     setSelectedAlbumId(null);
   }
 
-  function selectFile(nextFile) {
+  function selectFiles(nextFiles) {
+    const selectedFiles = Array.from(nextFiles ?? []);
+    if (selectedFiles.length === 0) {
+      setFiles([]);
+      setFormError("");
+      return;
+    }
+
     try {
-      validateMemoryImage(nextFile);
-      setFile(nextFile);
+      selectedFiles.forEach((nextFile) => validateMemoryImage(nextFile));
+      setFiles(selectedFiles);
       setFormError("");
     } catch (error) {
-      setFile(null);
+      setFiles([]);
       setFormError(error instanceof Error ? error.message : "Fotografía no válida.");
     }
   }
 
-  async function submitMemory(event) {
+  async function submitMemories(event) {
     event.preventDefault();
 
     if (!selectedAlbum) {
       setFormError("Primero selecciona un álbum.");
       return;
     }
-    if (!file) {
-      setFormError("Selecciona una fotografía.");
+    if (files.length === 0) {
+      setFormError("Selecciona al menos una fotografía.");
       return;
     }
     if (!memoryDate || memoryDate > getLocalDateKey()) {
@@ -344,23 +381,87 @@ export default function Memories() {
 
     setUploading(true);
     setFormError("");
-    const result = await addMemory({
-      albumId: selectedAlbum.id,
-      description,
-      file,
-      memoryDate,
-      title,
-    });
+    setUploadProgress({ completed: 0, total: files.length });
+    const failedFiles = [];
+    let completed = 0;
+    const lastSortOrder = albumMemories.reduce((highest, memory) => {
+      const candidate = Number.isSafeInteger(memory.sortOrder)
+        ? memory.sortOrder
+        : Date.parse(memory.createdAt ?? "") * 1000 || 0;
+      return Math.max(highest, candidate);
+    }, 0);
+    const firstSortOrder = Math.max(Date.now() * 1000, lastSortOrder + 1);
+
+    for (let index = 0; index < files.length; index += 1) {
+      const selectedFile = files[index];
+      const result = await addMemory({
+        albumId: selectedAlbum.id,
+        description: "",
+        file: selectedFile,
+        memoryDate,
+        sortOrder: firstSortOrder + index,
+        title: "",
+      });
+
+      if (result.error) failedFiles.push(selectedFile);
+      else completed += 1;
+      setUploadProgress({ completed, total: files.length });
+    }
+
     setUploading(false);
 
-    if (result.error) {
-      setFormError(result.error.message || "No se pudo guardar la fotografía.");
+    if (failedFiles.length > 0) {
+      setFiles(failedFiles);
+      setUploadProgress({ completed: 0, total: failedFiles.length });
+      setFormError(
+        completed > 0
+          ? `Se guardaron ${completed} de ${files.length}. Vuelve a intentar con las que faltan.`
+          : "No se pudieron guardar las fotografías. Inténtalo nuevamente.",
+      );
       return;
     }
 
     resetMemoryForm();
     setMemoryFormOpen(false);
-    setSelectedMemoryId(result.data.id);
+  }
+
+  function openMemory(memoryId) {
+    const memory = memories.find((item) => item.id === memoryId);
+    if (!memory) return;
+    setEditedMemoryTitle(memory.title ?? "");
+    setEditedMemoryDescription(memory.description ?? "");
+    setMemoryDetailsError("");
+    setEditingMemoryDetails(false);
+    setSelectedMemoryId(memoryId);
+  }
+
+  function closeSelectedMemory() {
+    if (deleting || changingCover || savingMemoryDetails) return;
+    setEditingMemoryDetails(false);
+    setMemoryDetailsError("");
+    setSelectedMemoryId(null);
+  }
+
+  async function submitMemoryDetails(event) {
+    event.preventDefault();
+    if (!selectedMemory || savingMemoryDetails) return;
+
+    setSavingMemoryDetails(true);
+    setMemoryDetailsError("");
+    const result = await updateMemory(selectedMemory.id, {
+      description: editedMemoryDescription,
+      title: editedMemoryTitle,
+    });
+    setSavingMemoryDetails(false);
+
+    if (result.error) {
+      setMemoryDetailsError(
+        result.error.message || "No se pudieron guardar los detalles.",
+      );
+      return;
+    }
+
+    setEditingMemoryDetails(false);
   }
 
   async function deleteSelectedMemory() {
@@ -617,39 +718,15 @@ export default function Memories() {
               </button>
             </div>
           ) : (
-            <div className="memoryGallery">
-              {albumMemories.map((memory) => {
-                const formattedDate = formatCalendarDate(memory.memoryDate);
-                return (
-                  <button
-                    type="button"
-                    className="memoryCard"
-                    key={memory.id}
-                    onClick={() => setSelectedMemoryId(memory.id)}
-                    aria-label={
-                      memory.title
-                        ? `Abrir recuerdo ${memory.title}`
-                        : `Abrir fotografía del ${formattedDate}`
-                    }
-                  >
-                    <span className="memoryCardImage">
-                      {memory.imageUrl ? (
-                        <img src={memory.imageUrl} alt="" loading="lazy" decoding="async" />
-                      ) : (
-                        <ImagePlus aria-hidden="true" size={28} strokeWidth={1.5} />
-                      )}
-                    </span>
-                    <span className="memoryCardBody">
-                      <span className="memoryCardDate">
-                        <CalendarDays aria-hidden="true" size={13} strokeWidth={1.8} />
-                        {formattedDate}
-                      </span>
-                      {memory.title && <strong>{memory.title}</strong>}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+            <MemoryCollage
+              memories={albumMemories}
+              onSelect={openMemory}
+              getLabel={(memory) => (
+                memory.title
+                  ? `Abrir recuerdo ${memory.title}`
+                  : `Abrir fotografía del ${formatCalendarDate(memory.memoryDate)}`
+              )}
+            />
           )}
         </Block>
       )}
@@ -816,29 +893,42 @@ export default function Memories() {
               </button>
             </header>
 
-            <form className="memoryForm" onSubmit={(event) => void submitMemory(event)}>
+            <form className="memoryForm" onSubmit={(event) => void submitMemories(event)}>
               <label className="memoryDropzone">
                 <input
                   className="srOnly"
                   type="file"
                   accept={ACCEPTED_IMAGES}
-                  onChange={(event) => selectFile(event.target.files?.[0] ?? null)}
+                  multiple
+                  onChange={(event) => selectFiles(event.target.files)}
                   disabled={uploading}
                 />
 
-                {previewUrl ? (
-                  <img src={previewUrl} alt="Vista previa del recuerdo" />
+                {previewItems.length > 0 ? (
+                  <span className="memoryBatchPreview" aria-label="Fotografías seleccionadas">
+                    {previewItems.map((item, index) => (
+                      <img
+                        key={`${item.file.name}-${item.file.lastModified}-${index}`}
+                        src={item.url}
+                        alt=""
+                      />
+                    ))}
+                  </span>
                 ) : (
                   <span className="memoryDropzoneEmpty">
                     <span className="memoryDropzoneIcon" aria-hidden="true">
                       <Upload size={25} strokeWidth={1.6} />
                     </span>
-                    <strong>Elegir fotografía</strong>
-                    <small>JPG, PNG, WebP o HEIC · máximo 20 MB</small>
+                    <strong>Elegir fotografías</strong>
+                    <small>Puedes seleccionar varias · máximo 20 MB por foto</small>
                   </span>
                 )}
 
-                {file && <span className="memoryFileName">{file.name}</span>}
+                {files.length > 0 && (
+                  <span className="memoryFileName">
+                    {files.length} {files.length === 1 ? "foto seleccionada" : "fotos seleccionadas"}
+                  </span>
+                )}
               </label>
 
               <div className="memoryFields memoryComposerFields">
@@ -854,41 +944,6 @@ export default function Memories() {
                   style={styles.input}
                   disabled={uploading}
                 />
-
-                <details className="memoryOptionalDetails">
-                  <summary>
-                    <Plus aria-hidden="true" size={15} strokeWidth={1.8} />
-                    Añadir título o minicarta
-                  </summary>
-                  <div className="memoryOptionalFields">
-                    <label htmlFor="memory-title" style={styles.fieldLabel}>
-                      Título <span className="memoryOptional">(opcional)</span>
-                    </label>
-                    <input
-                      id="memory-title"
-                      value={title}
-                      onChange={(event) => setTitle(event.target.value)}
-                      placeholder="Un día para recordar"
-                      maxLength={120}
-                      style={styles.input}
-                      disabled={uploading}
-                    />
-
-                    <label htmlFor="memory-description" style={styles.fieldLabel}>
-                      Minicarta <span className="memoryOptional">(opcional)</span>
-                    </label>
-                    <textarea
-                      id="memory-description"
-                      value={description}
-                      onChange={(event) => setDescription(event.target.value)}
-                      placeholder="Escribe algo sobre este momento..."
-                      maxLength={4000}
-                      rows={4}
-                      style={styles.textarea}
-                      disabled={uploading}
-                    />
-                  </div>
-                </details>
 
                 {formError && (
                   <div className="memoryFormError" role="alert">
@@ -916,7 +971,11 @@ export default function Memories() {
                     ) : (
                       <Upload aria-hidden="true" size={16} strokeWidth={1.8} />
                     )}
-                    {uploading ? "Preparando y subiendo..." : "Guardar foto"}
+                    {uploading
+                      ? `Subiendo ${uploadProgress.completed} de ${uploadProgress.total}...`
+                      : files.length > 1
+                        ? `Guardar ${files.length} fotos`
+                        : "Guardar foto"}
                   </button>
                 </div>
               </div>
@@ -929,9 +988,7 @@ export default function Memories() {
         <div
           className="memoryModalBackdrop"
           onMouseDown={(event) => {
-            if (event.target === event.currentTarget && !deleting) {
-              setSelectedMemoryId(null);
-            }
+            if (event.target === event.currentTarget) closeSelectedMemory();
           }}
         >
           <section
@@ -944,9 +1001,9 @@ export default function Memories() {
               ref={closeButtonRef}
               type="button"
               className="memoryModalClose"
-              onClick={() => setSelectedMemoryId(null)}
+              onClick={closeSelectedMemory}
               aria-label="Cerrar recuerdo"
-              disabled={deleting || changingCover}
+              disabled={deleting || changingCover || savingMemoryDetails}
             >
               <X aria-hidden="true" size={19} strokeWidth={1.8} />
             </button>
@@ -979,13 +1036,95 @@ export default function Memories() {
               </h2>
               {selectedMemory.description && <p>{selectedMemory.description}</p>}
 
+              {editingMemoryDetails ? (
+                <form
+                  className="memoryDetailsForm"
+                  onSubmit={(event) => void submitMemoryDetails(event)}
+                >
+                  <label htmlFor="selected-memory-title" style={styles.fieldLabel}>
+                    Título <span className="memoryOptional">(opcional)</span>
+                  </label>
+                  <input
+                    id="selected-memory-title"
+                    value={editedMemoryTitle}
+                    onChange={(event) => setEditedMemoryTitle(event.target.value)}
+                    maxLength={120}
+                    style={styles.input}
+                    disabled={savingMemoryDetails}
+                  />
+
+                  <label htmlFor="selected-memory-description" style={styles.fieldLabel}>
+                    Descripción <span className="memoryOptional">(opcional)</span>
+                  </label>
+                  <textarea
+                    id="selected-memory-description"
+                    value={editedMemoryDescription}
+                    onChange={(event) => setEditedMemoryDescription(event.target.value)}
+                    maxLength={4000}
+                    rows={5}
+                    style={styles.textarea}
+                    disabled={savingMemoryDetails}
+                  />
+
+                  {memoryDetailsError && (
+                    <div className="memoryFormError" role="alert">
+                      {memoryDetailsError}
+                    </div>
+                  )}
+
+                  <div className="memoryDetailsActions">
+                    <button
+                      type="button"
+                      style={styles.ghostBtn}
+                      onClick={() => {
+                        setEditedMemoryTitle(selectedMemory.title ?? "");
+                        setEditedMemoryDescription(selectedMemory.description ?? "");
+                        setMemoryDetailsError("");
+                        setEditingMemoryDetails(false);
+                      }}
+                      disabled={savingMemoryDetails}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      style={styles.primaryBtnSmall}
+                      disabled={savingMemoryDetails}
+                    >
+                      {savingMemoryDetails && (
+                        <LoaderCircle
+                          aria-hidden="true"
+                          className="syncSpinner"
+                          size={15}
+                          strokeWidth={1.8}
+                        />
+                      )}
+                      {savingMemoryDetails ? "Guardando..." : "Guardar detalles"}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <button
+                  type="button"
+                  style={styles.ghostBtn}
+                  className="memoryDetailsButton"
+                  onClick={() => setEditingMemoryDetails(true)}
+                  disabled={deleting || changingCover || savingMemoryDetails}
+                >
+                  <Pencil aria-hidden="true" size={15} strokeWidth={1.8} />
+                  {selectedMemory.title || selectedMemory.description
+                    ? "Editar título o descripción"
+                    : "Añadir título o descripción"}
+                </button>
+              )}
+
               <div className="memoryModalActions">
                 <button
                   type="button"
                   style={styles.ghostBtn}
                   className="memoryCoverButton"
                   onClick={() => void toggleSelectedCover()}
-                  disabled={changingCover || deleting}
+                  disabled={changingCover || deleting || savingMemoryDetails}
                 >
                   {changingCover ? (
                     <LoaderCircle
@@ -1009,7 +1148,7 @@ export default function Memories() {
                   style={styles.dangerBtn}
                   className="memoryDeleteButton"
                   onClick={() => void deleteSelectedMemory()}
-                  disabled={deleting || changingCover}
+                  disabled={deleting || changingCover || savingMemoryDetails}
                 >
                   {deleting ? (
                     <LoaderCircle

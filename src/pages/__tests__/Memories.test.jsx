@@ -5,7 +5,7 @@ import { renderWithWorkspace } from "../../test/renderWithWorkspace.jsx";
 import Memories from "../Memories.jsx";
 
 describe("Recuerdos", () => {
-  it("crea un álbum y guarda un recuerdo privado dentro", async () => {
+  it("crea un álbum, sube varias fotos y edita una desde el collage", async () => {
     const user = userEvent.setup();
     renderWithWorkspace(<Memories />);
 
@@ -22,15 +22,24 @@ describe("Recuerdos", () => {
 
     expect(await screen.findByText("Lugares que quiero recordar.")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Añadir la primera foto" }));
-    const file = new File(["fotografía"], "paseo.jpg", { type: "image/jpeg" });
-    await user.upload(screen.getByLabelText(/Elegir fotografía/), file);
-    await user.click(screen.getByText("Añadir título o minicarta"));
-    await user.type(screen.getByRole("textbox", { name: /Título/ }), "Nuestro paseo");
+    const files = [
+      new File(["primera fotografía"], "paseo.jpg", { type: "image/jpeg" }),
+      new File(["segunda fotografía"], "playa.jpg", { type: "image/jpeg" }),
+    ];
+    await user.upload(screen.getByLabelText(/Elegir fotografías/), files);
+    await user.click(screen.getByRole("button", { name: "Guardar 2 fotos" }));
+
+    const photos = await screen.findAllByRole("button", { name: /Abrir fotografía del/ });
+    expect(photos).toHaveLength(2);
+    await user.click(photos[0]);
+
+    await user.click(screen.getByRole("button", { name: "Añadir título o descripción" }));
+    await user.type(screen.getByRole("textbox", { name: /^Título/ }), "Nuestro paseo");
     await user.type(
-      screen.getByRole("textbox", { name: /Minicarta/ }),
+      screen.getByRole("textbox", { name: /^Descripción/ }),
       "Un momento que siempre quiero recordar.",
     );
-    await user.click(screen.getByRole("button", { name: "Guardar foto" }));
+    await user.click(screen.getByRole("button", { name: "Guardar detalles" }));
 
     const dialog = await screen.findByRole("dialog", { name: "Nuestro paseo" });
     expect(dialog).toHaveTextContent("Un momento que siempre quiero recordar.");
@@ -48,7 +57,7 @@ describe("Recuerdos", () => {
     await user.click(screen.getByRole("button", { name: "Eliminar fotografía" }));
 
     expect(confirm).toHaveBeenCalledWith(expect.stringContaining("Nuestro paseo"));
-    expect(screen.getByText("Este álbum todavía está vacío")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /Abrir fotografía del/ })).toHaveLength(1);
   }, 10000);
 
   it("permite guardar solamente la foto y la fecha", async () => {
@@ -68,13 +77,14 @@ describe("Recuerdos", () => {
     await user.click(screen.getByRole("button", { name: "Abrir álbum Comida" }));
     await user.click(screen.getByRole("button", { name: "Añadir la primera foto" }));
     await user.upload(
-      screen.getByLabelText(/Elegir fotografía/),
+      screen.getByLabelText(/Elegir fotografías/),
       new File(["foto"], "comida.jpg", { type: "image/jpeg" }),
     );
     await user.click(screen.getByRole("button", { name: "Guardar foto" }));
 
-    expect(await screen.findByRole("dialog", { name: /Fotografía del/ }))
-      .toBeInTheDocument();
+    const photo = await screen.findByRole("button", { name: /Abrir fotografía del/ });
+    await user.click(photo);
+    expect(await screen.findByRole("dialog", { name: /Fotografía del/ })).toBeInTheDocument();
   });
 
   it("edita y elimina un álbum con confirmación", async () => {
