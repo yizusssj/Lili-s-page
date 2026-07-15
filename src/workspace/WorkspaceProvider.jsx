@@ -21,6 +21,7 @@ import {
 } from "../offline/offlineSync.js";
 import { getLocalDateKey } from "../utils/date.js";
 import { prepareMemoryImage } from "../utils/images.js";
+import { createMemoryUploadError } from "../utils/memoryUploadErrors.js";
 import { normalizeReminderMinutes } from "../utils/reminders.js";
 import { writeJSON, writeText } from "../utils/storage.js";
 import {
@@ -897,6 +898,19 @@ export default function WorkspaceProvider({ children }) {
       let image;
       try {
         image = await prepareMemoryImage(file);
+      } catch (error) {
+        return {
+          data: null,
+          error: createMemoryUploadError(
+            error,
+            "prepare",
+            "No se pudo preparar la foto.",
+          ),
+        };
+      }
+
+      let imageCached = false;
+      try {
         await putOfflineImage({
           blob: image.blob,
           memoryId: id,
@@ -904,8 +918,18 @@ export default function WorkspaceProvider({ children }) {
           userId,
           workspaceId: currentWorkspace.id,
         });
+        imageCached = true;
       } catch (error) {
-        return { data: null, error: normalizeError(error, "No se pudo preparar la foto.") };
+        if (typeof navigator !== "undefined" && navigator.onLine === false) {
+          return {
+            data: null,
+            error: createMemoryUploadError(
+              error,
+              "cache",
+              "No se pudo guardar la foto en este dispositivo.",
+            ),
+          };
+        }
       }
 
       const localMemory = {
@@ -935,10 +959,12 @@ export default function WorkspaceProvider({ children }) {
         "No se pudo guardar el recuerdo. Revisa la fotografía e inténtalo otra vez.",
         {
           fallbackData: localMemory,
-          offlineOperation: {
-            payload: { memory },
-            type: "memory.insert",
-          },
+          offlineOperation: imageCached
+            ? {
+                payload: { memory },
+                type: "memory.insert",
+              }
+            : null,
         },
       );
 

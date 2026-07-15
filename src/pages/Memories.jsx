@@ -24,6 +24,7 @@ import SectionTitle from "../components/SectionTitle.jsx";
 import { formatCalendarDate, getLocalDateKey } from "../utils/date.js";
 import { validateMemoryImage } from "../utils/images.js";
 import {
+  getMemoryUploadDiagnostic,
   getMemoryUploadErrorMessage,
   isBlockingMemoryUploadError,
 } from "../utils/memoryUploadErrors.js";
@@ -65,6 +66,7 @@ export default function Memories() {
   const [memoryDate, setMemoryDate] = useState(getLocalDateKey);
   const [files, setFiles] = useState([]);
   const [formError, setFormError] = useState("");
+  const [formDiagnostic, setFormDiagnostic] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ completed: 0, total: 0 });
   const [deleting, setDeleting] = useState(false);
@@ -173,6 +175,7 @@ export default function Memories() {
         setMemoryDate(getLocalDateKey());
         setFiles([]);
         setFormError("");
+        setFormDiagnostic("");
         setUploadProgress({ completed: 0, total: 0 });
         setMemoryFormOpen(false);
       }
@@ -330,6 +333,7 @@ export default function Memories() {
     setMemoryDate(getLocalDateKey());
     setFiles([]);
     setFormError("");
+    setFormDiagnostic("");
     setUploadProgress({ completed: 0, total: 0 });
   }
 
@@ -354,6 +358,7 @@ export default function Memories() {
     if (selectedFiles.length === 0) {
       setFiles([]);
       setFormError("");
+      setFormDiagnostic("");
       return;
     }
 
@@ -361,9 +366,11 @@ export default function Memories() {
       selectedFiles.forEach((nextFile) => validateMemoryImage(nextFile));
       setFiles(selectedFiles);
       setFormError("");
+      setFormDiagnostic("");
     } catch (error) {
       setFiles([]);
       setFormError(error instanceof Error ? error.message : "Fotografía no válida.");
+      setFormDiagnostic("");
     }
   }
 
@@ -385,6 +392,7 @@ export default function Memories() {
 
     setUploading(true);
     setFormError("");
+    setFormDiagnostic("");
     setUploadProgress({ completed: 0, total: files.length });
     const failedFiles = [];
     let completed = 0;
@@ -429,6 +437,7 @@ export default function Memories() {
       setFiles(failedFiles);
       setUploadProgress({ completed: 0, total: failedFiles.length });
       const errorMessage = getMemoryUploadErrorMessage(firstError);
+      setFormDiagnostic(getMemoryUploadDiagnostic(firstError));
       setFormError(
         completed > 0
           ? `Se guardaron ${completed} de ${files.length}. ${errorMessage}`
@@ -964,6 +973,12 @@ export default function Memories() {
                 {formError && (
                   <div className="memoryFormError" role="alert">
                     {formError}
+                    {formDiagnostic && (
+                      <details className="memoryErrorDetails">
+                        <summary>Ver detalle técnico</summary>
+                        <code>{formDiagnostic}</code>
+                      </details>
+                    )}
                   </div>
                 )}
 

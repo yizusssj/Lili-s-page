@@ -2637,6 +2637,27 @@ input[type="checkbox"] {
   line-height: 1.4;
 }
 
+.memoryErrorDetails {
+  margin-top: 8px;
+  color: #7f1d1d;
+}
+
+.memoryErrorDetails summary {
+  width: fit-content;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.memoryErrorDetails code {
+  margin-top: 7px;
+  display: block;
+  overflow-wrap: anywhere;
+  color: inherit;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
 .memoryFormActions {
   margin-top: auto;
   display: flex;

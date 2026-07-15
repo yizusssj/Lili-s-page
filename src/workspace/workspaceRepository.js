@@ -1,3 +1,5 @@
+import { createMemoryUploadError } from "../utils/memoryUploadErrors.js";
+
 function throwIfError(error, fallbackMessage) {
   if (!error) return;
 
@@ -325,10 +327,25 @@ export async function insertMemory(
     .upload(memory.storagePath, image.blob, {
       cacheControl: String(MEMORY_URL_SECONDS),
       contentType: image.mimeType,
-      upsert: true,
+      upsert: false,
     });
 
-  throwIfError(uploadResult.error, "No se pudo subir la fotografía.");
+  const uploadErrorText = String(uploadResult.error?.message ?? "").toLowerCase();
+  const uploadAlreadyExists = uploadResult.error
+    && (
+      uploadResult.error.status === 409
+      || uploadResult.error.statusCode === "409"
+      || uploadErrorText.includes("already exists")
+      || uploadErrorText.includes("resource exists")
+    );
+
+  if (uploadResult.error && !uploadAlreadyExists) {
+    throw createMemoryUploadError(
+      uploadResult.error,
+      "storage",
+      "No se pudo subir la fotografía.",
+    );
+  }
 
   let row;
   try {
@@ -350,7 +367,13 @@ export async function insertMemory(
       .select(MEMORY_SELECT)
       .single();
 
-    throwIfError(error, "No se pudo guardar el recuerdo.");
+    if (error) {
+      throw createMemoryUploadError(
+        error,
+        "database",
+        "No se pudo guardar el recuerdo.",
+      );
+    }
     row = data;
   } catch (error) {
     await client.storage.from(MEMORY_BUCKET).remove([memory.storagePath]);

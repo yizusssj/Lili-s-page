@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  createMemoryUploadError,
+  getMemoryUploadDiagnostic,
   getMemoryUploadErrorMessage,
   isBlockingMemoryUploadError,
 } from "./memoryUploadErrors.js";
@@ -25,5 +27,19 @@ describe("errores al subir recuerdos", () => {
   it("da una salida útil para fallos desconocidos", () => {
     expect(getMemoryUploadErrorMessage(new Error("Unexpected failure")))
       .toMatch(/Supabase/);
+  });
+
+  it("conserva la etapa y el código técnico de Storage", () => {
+    const error = createMemoryUploadError(
+      { message: "Unauthorized", status: 403, statusCode: "403" },
+      "storage",
+      "No se pudo subir.",
+    );
+
+    expect(isBlockingMemoryUploadError(error)).toBe(true);
+    expect(getMemoryUploadErrorMessage(error)).toMatch(/cierra sesión/i);
+    expect(getMemoryUploadDiagnostic(error)).toBe(
+      "subida de archivo · 403: Unauthorized",
+    );
   });
 });
