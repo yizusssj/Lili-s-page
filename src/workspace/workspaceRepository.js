@@ -7,6 +7,19 @@ function throwIfError(error, fallbackMessage) {
   throw error;
 }
 
+async function ensureTrashedRow(client, table, workspaceId, itemId, message) {
+  const { data, error } = await client
+    .from(table)
+    .select("id")
+    .eq("workspace_id", workspaceId)
+    .eq("id", itemId)
+    .not("deleted_at", "is", null)
+    .maybeSingle();
+
+  throwIfError(error, message);
+  if (!data) throw new Error("El elemento ya no esta en la papelera.");
+}
+
 function mapTask(row) {
   return {
     id: row.id,
@@ -21,12 +34,13 @@ function mapTask(row) {
       : [],
     reminderMinutesBefore: row.reminder_minutes_before,
     reminderAcknowledgedAt: row.reminder_acknowledged_at,
+    deletedAt: row.deleted_at ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
 
-const TASK_SELECT = "id, text, done, due_date, due_time, priority, recurrence, recurrence_completed_dates, reminder_minutes_before, reminder_acknowledged_at, created_at, updated_at";
+const TASK_SELECT = "id, text, done, due_date, due_time, priority, recurrence, recurrence_completed_dates, reminder_minutes_before, reminder_acknowledged_at, deleted_at, created_at, updated_at";
 
 function mapNote(row) {
   return {
@@ -34,6 +48,7 @@ function mapNote(row) {
     title: row.title,
     content: row.content,
     pinned: row.pinned,
+    deletedAt: row.deleted_at ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -54,6 +69,7 @@ function mapAlbum(row) {
     title: row.title,
     description: row.description,
     coverMemoryId: row.cover_memory_id,
+    deletedAt: row.deleted_at ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -73,6 +89,7 @@ function mapMemory(row, image = {}) {
     storagePath: row.storage_path,
     mimeType: row.mime_type,
     fileSize: row.file_size,
+    deletedAt: row.deleted_at ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     imageUrl: image.signedUrl ?? null,
@@ -80,9 +97,11 @@ function mapMemory(row, image = {}) {
   };
 }
 
-const MEMORY_SELECT = "id, album_id, title, description, memory_date, sort_order, storage_path, mime_type, file_size, created_at, updated_at";
+const NOTE_SELECT = "id, title, content, pinned, deleted_at, created_at, updated_at";
+const ALBUM_SELECT = "id, title, description, cover_memory_id, deleted_at, created_at, updated_at";
+const MEMORY_SELECT = "id, album_id, title, description, memory_date, sort_order, storage_path, mime_type, file_size, deleted_at, created_at, updated_at";
 
-async function attachMemoryUrls(client, rows, existingMemories) {
+async function attachMemoryUrls(client, rows, existingMemories = []) {
   const now = Date.now();
   const reusable = new Map(
     existingMemories
@@ -170,6 +189,7 @@ export async function fetchWorkspaceData(
   workspaceId,
   localDate,
   existingMemories = [],
+  existingTrash = [],
 ) {
   const [
     tasksResult,
@@ -178,16 +198,22 @@ export async function fetchWorkspaceData(
     quickNoteResult,
     albumsResult,
     memoriesResult,
+    trashTasksResult,
+    trashNotesResult,
+    trashAlbumsResult,
+    trashMemoriesResult,
   ] = await Promise.all([
     client
       .from("tasks")
       .select(TASK_SELECT)
       .eq("workspace_id", workspaceId)
+      .is("deleted_at", null)
       .order("created_at", { ascending: false }),
     client
       .from("notes")
-      .select("id, title, content, pinned, created_at, updated_at")
+      .select(NOTE_SELECT)
       .eq("workspace_id", workspaceId)
+      .is("deleted_at", null)
       .order("updated_at", { ascending: false }),
     client
       .from("today_priorities")
@@ -201,14 +227,40 @@ export async function fetchWorkspaceData(
       .maybeSingle(),
     client
       .from("memory_albums")
-      .select("id, title, description, cover_memory_id, created_at, updated_at")
+      .select(ALBUM_SELECT)
       .eq("workspace_id", workspaceId)
+      .is("deleted_at", null)
       .order("created_at", { ascending: false }),
     client
       .from("memories")
       .select(MEMORY_SELECT)
       .eq("workspace_id", workspaceId)
+      .is("deleted_at", null)
       .order("sort_order", { ascending: true }),
+    client
+      .from("tasks")
+      .select(TASK_SELECT)
+      .eq("workspace_id", workspaceId)
+      .not("deleted_at", "is", null)
+      .order("deleted_at", { ascending: false }),
+    client
+      .from("notes")
+      .select(NOTE_SELECT)
+      .eq("workspace_id", workspaceId)
+      .not("deleted_at", "is", null)
+      .order("deleted_at", { ascending: false }),
+    client
+      .from("memory_albums")
+      .select(ALBUM_SELECT)
+      .eq("workspace_id", workspaceId)
+      .not("deleted_at", "is", null)
+      .order("deleted_at", { ascending: false }),
+    client
+      .from("memories")
+      .select(MEMORY_SELECT)
+      .eq("workspace_id", workspaceId)
+      .not("deleted_at", "is", null)
+      .order("deleted_at", { ascending: false }),
   ]);
 
   throwIfError(tasksResult.error, "No se pudieron cargar las tareas.");
@@ -218,19 +270,57 @@ export async function fetchWorkspaceData(
   throwIfError(memoriesResult.error, "No se pudieron cargar los recuerdos.");
   throwIfError(albumsResult.error, "No se pudieron cargar los álbumes.");
 
-  const memories = await attachMemoryUrls(
+  throwIfError(trashTasksResult.error, "No se pudo cargar la papelera de tareas.");
+  throwIfError(trashNotesResult.error, "No se pudo cargar la papelera de notas.");
+  throwIfError(trashAlbumsResult.error, "No se pudo cargar la papelera de albumes.");
+  throwIfError(trashMemoriesResult.error, "No se pudo cargar la papelera de recuerdos.");
+
+  const reusableTrashMemories = existingTrash.flatMap((item) => {
+    if (item.type === "album") return item.memories ?? [];
+    if (item.type === "memory" && item.data) return [item.data];
+    return [];
+  });
+  const mappedMemories = await attachMemoryUrls(
     client,
-    memoriesResult.data ?? [],
-    existingMemories,
+    [...(memoriesResult.data ?? []), ...(trashMemoriesResult.data ?? [])],
+    [...existingMemories, ...reusableTrashMemories],
   );
+  const memoriesById = new Map(mappedMemories.map((memory) => [memory.id, memory]));
+  const activeAlbums = (albumsResult.data ?? []).map(mapAlbum);
+  const deletedAlbums = (trashAlbumsResult.data ?? []).map(mapAlbum);
+  const activeAlbumIds = new Set(activeAlbums.map((album) => album.id));
+  const memories = (memoriesResult.data ?? [])
+    .map((row) => memoriesById.get(row.id))
+    .filter((memory) => memory && activeAlbumIds.has(memory.albumId));
+  const trash = [
+    ...(trashTasksResult.data ?? []).map((row) => ({
+      data: mapTask(row), deletedAt: row.deleted_at, id: row.id, type: "task",
+    })),
+    ...(trashNotesResult.data ?? []).map((row) => ({
+      data: mapNote(row), deletedAt: row.deleted_at, id: row.id, type: "note",
+    })),
+    ...(trashMemoriesResult.data ?? []).map((row) => ({
+      data: memoriesById.get(row.id), deletedAt: row.deleted_at, id: row.id, type: "memory",
+    })),
+    ...deletedAlbums.map((album) => ({
+      data: album,
+      deletedAt: album.deletedAt,
+      id: album.id,
+      memories: mappedMemories.filter(
+        (memory) => memory.albumId === album.id && !memory.deletedAt,
+      ),
+      type: "album",
+    })),
+  ].sort((first, second) => second.deletedAt.localeCompare(first.deletedAt));
 
   return {
-    albums: (albumsResult.data ?? []).map(mapAlbum),
+    albums: activeAlbums,
     memories,
     notes: (notesResult.data ?? []).map(mapNote),
     priorities: (prioritiesResult.data ?? []).map((row) => mapPriority(row, localDate)),
     quickNote: quickNoteResult.data?.content ?? "",
     tasks: (tasksResult.data ?? []).map(mapTask),
+    trash,
   };
 }
 
@@ -244,7 +334,7 @@ export async function insertAlbum(client, workspaceId, userId, album) {
       title: album.title,
       workspace_id: workspaceId,
     }, { onConflict: "id" })
-    .select("id, title, description, cover_memory_id, created_at, updated_at")
+    .select(ALBUM_SELECT)
     .single();
 
   throwIfError(error, "No se pudo crear el álbum.");
@@ -262,7 +352,7 @@ export async function updateAlbumCover(
     .update({ cover_memory_id: coverMemoryId })
     .eq("workspace_id", workspaceId)
     .eq("id", albumId)
-    .select("id, title, description, cover_memory_id, created_at, updated_at")
+    .select(ALBUM_SELECT)
     .single();
 
   throwIfError(error, "No se pudo cambiar la portada del álbum.");
@@ -275,7 +365,7 @@ export async function updateAlbum(client, workspaceId, albumId, fields) {
     .update(fields)
     .eq("workspace_id", workspaceId)
     .eq("id", albumId)
-    .select("id, title, description, cover_memory_id, created_at, updated_at")
+    .select(ALBUM_SELECT)
     .single();
 
   throwIfError(error, "No se pudo actualizar el álbum.");
@@ -288,6 +378,13 @@ export async function deleteAlbum(
   albumId,
   storagePaths,
 ) {
+  await ensureTrashedRow(
+    client,
+    "memory_albums",
+    workspaceId,
+    albumId,
+    "No se pudo verificar el album en la papelera.",
+  );
   const rpcArguments = {
     target_album_id: albumId,
     target_workspace_id: workspaceId,
@@ -313,6 +410,34 @@ export async function deleteAlbum(
   });
 
   throwIfError(error, "No se pudo eliminar el álbum.");
+}
+
+export async function trashAlbum(client, workspaceId, albumId) {
+  const { data, error } = await client
+    .from("memory_albums")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("workspace_id", workspaceId)
+    .eq("id", albumId)
+    .is("deleted_at", null)
+    .select(ALBUM_SELECT)
+    .single();
+
+  throwIfError(error, "No se pudo mover el album a la papelera.");
+  return mapAlbum(data);
+}
+
+export async function restoreAlbum(client, workspaceId, albumId) {
+  const { data, error } = await client
+    .from("memory_albums")
+    .update({ deleted_at: null })
+    .eq("workspace_id", workspaceId)
+    .eq("id", albumId)
+    .not("deleted_at", "is", null)
+    .select(ALBUM_SELECT)
+    .single();
+
+  throwIfError(error, "No se pudo restaurar el album.");
+  return mapAlbum(data);
 }
 
 export async function insertMemory(
@@ -412,6 +537,13 @@ export async function updateMemory(client, workspaceId, memoryId, fields) {
 }
 
 export async function deleteMemory(client, workspaceId, memoryId, storagePath) {
+  await ensureTrashedRow(
+    client,
+    "memories",
+    workspaceId,
+    memoryId,
+    "No se pudo verificar el recuerdo en la papelera.",
+  );
   const storageResult = await client.storage.from(MEMORY_BUCKET).remove([storagePath]);
   throwIfError(storageResult.error, "No se pudo eliminar la fotografía privada.");
 
@@ -422,6 +554,34 @@ export async function deleteMemory(client, workspaceId, memoryId, storagePath) {
     .eq("id", memoryId);
 
   throwIfError(error, "No se pudo eliminar el recuerdo.");
+}
+
+export async function trashMemory(client, workspaceId, memoryId) {
+  const { data, error } = await client
+    .from("memories")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("workspace_id", workspaceId)
+    .eq("id", memoryId)
+    .is("deleted_at", null)
+    .select(MEMORY_SELECT)
+    .single();
+
+  throwIfError(error, "No se pudo mover el recuerdo a la papelera.");
+  return mapMemory(data);
+}
+
+export async function restoreMemory(client, workspaceId, memoryId) {
+  const { data, error } = await client
+    .from("memories")
+    .update({ deleted_at: null })
+    .eq("workspace_id", workspaceId)
+    .eq("id", memoryId)
+    .not("deleted_at", "is", null)
+    .select(MEMORY_SELECT)
+    .single();
+
+  throwIfError(error, "No se pudo restaurar el recuerdo.");
+  return mapMemory(data);
 }
 
 export async function insertTask(client, workspaceId, userId, task) {
@@ -462,6 +622,13 @@ export async function updateTask(client, workspaceId, taskId, fields) {
 }
 
 export async function deleteTask(client, workspaceId, taskId) {
+  await ensureTrashedRow(
+    client,
+    "tasks",
+    workspaceId,
+    taskId,
+    "No se pudo verificar la tarea en la papelera.",
+  );
   const { error } = await client
     .from("tasks")
     .delete()
@@ -469,6 +636,48 @@ export async function deleteTask(client, workspaceId, taskId) {
     .eq("id", taskId);
 
   throwIfError(error, "No se pudo eliminar la tarea.");
+}
+
+export async function trashTask(client, workspaceId, taskId) {
+  const { data, error } = await client
+    .from("tasks")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("workspace_id", workspaceId)
+    .eq("id", taskId)
+    .is("deleted_at", null)
+    .select(TASK_SELECT)
+    .single();
+
+  throwIfError(error, "No se pudo mover la tarea a la papelera.");
+  return mapTask(data);
+}
+
+export async function restoreTask(client, workspaceId, taskId) {
+  const { data, error } = await client
+    .from("tasks")
+    .update({ deleted_at: null })
+    .eq("workspace_id", workspaceId)
+    .eq("id", taskId)
+    .not("deleted_at", "is", null)
+    .select(TASK_SELECT)
+    .single();
+
+  throwIfError(error, "No se pudo restaurar la tarea.");
+  return mapTask(data);
+}
+
+export async function trashCompletedTasks(client, workspaceId, taskIds = []) {
+  let query = client
+    .from("tasks")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("workspace_id", workspaceId)
+    .eq("done", true)
+    .is("deleted_at", null);
+  if (taskIds.length > 0) query = query.in("id", taskIds);
+  const { data, error } = await query.select(TASK_SELECT);
+
+  throwIfError(error, "No se pudieron mover las tareas terminadas a la papelera.");
+  return (data ?? []).map(mapTask);
 }
 
 export async function deleteCompletedTasks(client, workspaceId) {
@@ -492,7 +701,7 @@ export async function insertNote(client, workspaceId, userId, note) {
       title: note.title,
       workspace_id: workspaceId,
     }, { onConflict: "id" })
-    .select("id, title, content, pinned, created_at, updated_at")
+    .select(NOTE_SELECT)
     .single();
 
   throwIfError(error, "No se pudo crear la nota.");
@@ -505,7 +714,7 @@ export async function updateNote(client, workspaceId, noteId, fields) {
     .update(fields)
     .eq("workspace_id", workspaceId)
     .eq("id", noteId)
-    .select("id, title, content, pinned, created_at, updated_at")
+    .select(NOTE_SELECT)
     .single();
 
   throwIfError(error, "No se pudo guardar la nota.");
@@ -513,6 +722,13 @@ export async function updateNote(client, workspaceId, noteId, fields) {
 }
 
 export async function deleteNote(client, workspaceId, noteId) {
+  await ensureTrashedRow(
+    client,
+    "notes",
+    workspaceId,
+    noteId,
+    "No se pudo verificar la nota en la papelera.",
+  );
   const { error } = await client
     .from("notes")
     .delete()
@@ -520,6 +736,38 @@ export async function deleteNote(client, workspaceId, noteId) {
     .eq("id", noteId);
 
   throwIfError(error, "No se pudo eliminar la nota.");
+}
+
+export async function trashNote(client, workspaceId, noteId, fields = {}) {
+  const payload = { deleted_at: new Date().toISOString() };
+  if (Object.hasOwn(fields, "title")) payload.title = fields.title;
+  if (Object.hasOwn(fields, "content")) payload.content = fields.content;
+  if (Object.hasOwn(fields, "pinned")) payload.pinned = fields.pinned;
+  const { data, error } = await client
+    .from("notes")
+    .update(payload)
+    .eq("workspace_id", workspaceId)
+    .eq("id", noteId)
+    .is("deleted_at", null)
+    .select(NOTE_SELECT)
+    .single();
+
+  throwIfError(error, "No se pudo mover la nota a la papelera.");
+  return mapNote(data);
+}
+
+export async function restoreNote(client, workspaceId, noteId) {
+  const { data, error } = await client
+    .from("notes")
+    .update({ deleted_at: null })
+    .eq("workspace_id", workspaceId)
+    .eq("id", noteId)
+    .not("deleted_at", "is", null)
+    .select(NOTE_SELECT)
+    .single();
+
+  throwIfError(error, "No se pudo restaurar la nota.");
+  return mapNote(data);
 }
 
 export async function savePriorities(client, workspaceId, priorities, localDate) {

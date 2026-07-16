@@ -54,7 +54,7 @@ describe("Recuerdos", () => {
 
     await user.click(screen.getByRole("button", { name: "Abrir recuerdo Nuestro paseo" }));
     const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
-    await user.click(screen.getByRole("button", { name: "Eliminar fotografía" }));
+    await user.click(screen.getByRole("button", { name: "Mover a la papelera" }));
 
     expect(confirm).toHaveBeenCalledWith(expect.stringContaining("Nuestro paseo"));
     expect(screen.getAllByRole("button", { name: /Abrir fotografía del/ })).toHaveLength(1);
@@ -152,7 +152,7 @@ describe("Recuerdos", () => {
 
     await user.click(screen.getByRole("button", { name: "Editar álbum" }));
     const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
-    await user.click(screen.getByRole("button", { name: "Eliminar álbum" }));
+    await user.click(screen.getByRole("button", { name: "Mover a la papelera" }));
 
     expect(confirm).toHaveBeenCalledWith(
       expect.stringContaining("Viajes favoritos"),

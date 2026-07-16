@@ -7,6 +7,7 @@ import {
   getOfflineImage,
   getOfflineSnapshot,
   hydrateOfflineMemories,
+  hydrateOfflineTrash,
   listOfflineOperations,
   putOfflineImage,
   removeOfflineImage,
@@ -48,6 +49,17 @@ describe("offline database", () => {
       ],
       quickNote: "Disponible sin red",
       tasks: [],
+      trash: [{
+        data: {
+          albumId: "album-1",
+          id: "memory-trash",
+          imageUrl: "https://signed.example.test/trash.jpg",
+          storagePath: "offline-workspace/memory-trash.jpg",
+        },
+        deletedAt: new Date().toISOString(),
+        id: "memory-trash",
+        type: "memory",
+      }],
     };
 
     expect(await saveOfflineSnapshot(userId, workspace, data)).toBe(true);
@@ -55,6 +67,7 @@ describe("offline database", () => {
     expect(snapshot.workspace).toEqual(workspace);
     expect(snapshot.data.quickNote).toBe("Disponible sin red");
     expect(snapshot.data.memories[0]).not.toHaveProperty("imageUrl");
+    expect(snapshot.data.trash[0].data).not.toHaveProperty("imageUrl");
 
     const first = await enqueueOfflineOperation({
       payload: { task: { id: "task-1", text: "Primera" } },
@@ -90,6 +103,7 @@ describe("offline database", () => {
       imageUrl: "blob:lili-offline-test",
       offlineImageUrl: true,
     });
+    expect((await hydrateOfflineTrash(snapshot.data.trash))[0].data.imageUrl).toBeUndefined();
 
     await removeOfflineImage("memory-1");
     expect(await getOfflineImage("memory-1")).toBeUndefined();

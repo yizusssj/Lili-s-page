@@ -27,7 +27,7 @@ describe("Notas", () => {
     expect(screen.getByRole("button", { name: "Desfijar" })).toBePressed();
 
     const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
-    await user.click(screen.getByRole("button", { name: "Eliminar" }));
+    await user.click(screen.getByRole("button", { name: "Papelera" }));
 
     expect(confirm).toHaveBeenCalledWith(expect.stringContaining("Carta especial"));
     expect(screen.getByText("Aún no hay notas")).toBeInTheDocument();

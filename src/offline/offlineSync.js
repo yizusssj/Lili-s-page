@@ -15,7 +15,16 @@ import {
   insertMemory,
   insertNote,
   insertTask,
+  restoreAlbum,
+  restoreMemory,
+  restoreNote,
+  restoreTask,
   savePriorities,
+  trashAlbum,
+  trashCompletedTasks,
+  trashMemory,
+  trashNote,
+  trashTask,
   updateAlbum,
   updateAlbumCover,
   updateNote,
@@ -48,6 +57,12 @@ async function executeOperation(client, operation) {
       return updateTask(client, workspaceId, payload.taskId, payload.fields);
     case "task.delete":
       return deleteTask(client, workspaceId, payload.taskId);
+    case "task.trash":
+      return trashTask(client, workspaceId, payload.taskId);
+    case "task.restore":
+      return restoreTask(client, workspaceId, payload.taskId);
+    case "task.trashCompleted":
+      return trashCompletedTasks(client, workspaceId, payload.taskIds);
     case "task.clearCompleted":
       return deleteCompletedTasks(client, workspaceId);
     case "note.insert":
@@ -56,6 +71,10 @@ async function executeOperation(client, operation) {
       return updateNote(client, workspaceId, payload.noteId, payload.fields);
     case "note.delete":
       return deleteNote(client, workspaceId, payload.noteId);
+    case "note.trash":
+      return trashNote(client, workspaceId, payload.noteId, payload.fields);
+    case "note.restore":
+      return restoreNote(client, workspaceId, payload.noteId);
     case "album.insert":
       return insertAlbum(client, workspaceId, userId, payload.album);
     case "album.update":
@@ -66,6 +85,10 @@ async function executeOperation(client, operation) {
       await deleteAlbum(client, workspaceId, payload.albumId, payload.storagePaths);
       await removeOfflineImages(payload.memoryIds);
       return null;
+    case "album.trash":
+      return trashAlbum(client, workspaceId, payload.albumId);
+    case "album.restore":
+      return restoreAlbum(client, workspaceId, payload.albumId);
     case "memory.insert": {
       const storedImage = await getOfflineImage(payload.memory.id);
       if (!storedImage?.blob) throw new Error("Falta la fotografía guardada en el dispositivo.");
@@ -83,6 +106,10 @@ async function executeOperation(client, operation) {
       );
       await removeOfflineImage(payload.memoryId);
       return null;
+    case "memory.trash":
+      return trashMemory(client, workspaceId, payload.memoryId);
+    case "memory.restore":
+      return restoreMemory(client, workspaceId, payload.memoryId);
     case "memory.update":
       return updateMemory(client, workspaceId, payload.memoryId, payload.fields);
     case "priorities.save":

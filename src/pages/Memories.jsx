@@ -308,10 +308,10 @@ export default function Memories() {
       albumMemories.length === 0
         ? "El álbum está vacío."
         : albumMemories.length === 1
-          ? "También se eliminará su fotografía."
-          : `También se eliminarán sus ${albumMemories.length} fotografías.`;
+          ? "Su fotografía quedará guardada dentro del álbum."
+          : `Sus ${albumMemories.length} fotografías quedarán guardadas dentro del álbum.`;
     const confirmed = window.confirm(
-      `¿Eliminar el álbum “${selectedAlbum.title}”? ${photoText} Esta acción no se puede deshacer.`,
+      `¿Mover el álbum “${selectedAlbum.title}” a la papelera? ${photoText} Podrás recuperarlo durante 30 días.`,
     );
     if (!confirmed) return;
 
@@ -493,7 +493,7 @@ export default function Memories() {
     if (!selectedMemory || deleting) return;
     const memoryName = selectedMemory.title || formatCalendarDate(selectedMemory.memoryDate);
     const confirmed = window.confirm(
-      `¿Eliminar “${memoryName}” y su fotografía? Esta acción no se puede deshacer.`,
+      `¿Mover “${memoryName}” a la papelera? Podrás recuperar la fotografía durante 30 días.`,
     );
     if (!confirmed) return;
 
@@ -855,13 +855,13 @@ export default function Memories() {
 
               <div className="albumDangerZone">
                 <div>
-                  <strong>Eliminar álbum</strong>
+                  <strong>Mover a la papelera</strong>
                   <span>
                     {albumMemories.length === 0
-                      ? "El álbum está vacío."
+                      ? "El álbum está vacío. Podrás recuperarlo durante 30 días."
                       : albumMemories.length === 1
-                        ? "También se eliminará 1 fotografía."
-                        : `También se eliminarán ${albumMemories.length} fotografías.`}
+                        ? "Su fotografía se conservará junto al álbum."
+                        : `Sus ${albumMemories.length} fotografías se conservarán junto al álbum.`}
                   </span>
                 </div>
                 <button
@@ -880,7 +880,7 @@ export default function Memories() {
                   ) : (
                     <Trash2 aria-hidden="true" size={15} strokeWidth={1.8} />
                   )}
-                  {deletingAlbum ? "Eliminando..." : "Eliminar álbum"}
+                  {deletingAlbum ? "Moviendo..." : "Mover a la papelera"}
                 </button>
               </div>
             </form>
@@ -1191,7 +1191,7 @@ export default function Memories() {
                   ) : (
                     <Trash2 aria-hidden="true" size={15} strokeWidth={1.8} />
                   )}
-                  {deleting ? "Eliminando..." : "Eliminar fotografía"}
+                  {deleting ? "Moviendo..." : "Mover a la papelera"}
                 </button>
               </div>
             </div>

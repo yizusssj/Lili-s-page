@@ -2,6 +2,7 @@ import { lazy, Suspense, useMemo, useState } from "react";
 import { useAuth } from "../auth/authContext.js";
 import Sidebar from "../components/Sidebar.jsx";
 import SyncStatus from "../components/SyncStatus.jsx";
+import TrashUndoNotice from "../components/TrashUndoNotice.jsx";
 import Memories from "../pages/Memories.jsx";
 import Notes from "../pages/Notes.jsx";
 import Pinterest from "../pages/Pinterest.jsx";
@@ -12,6 +13,7 @@ import { styles } from "./styles.jsx";
 
 const Calendar = lazy(() => import("../pages/Calendar.jsx"));
 const Arcade = lazy(() => import("../pages/Arcade.jsx"));
+const Trash = lazy(() => import("../pages/Trash.jsx"));
 
 const PAGE_COMPONENTS = {
   today: Today,
@@ -21,6 +23,7 @@ const PAGE_COMPONENTS = {
   memories: Memories,
   games: Arcade,
   pinterest: Pinterest,
+  trash: Trash,
 };
 
 export default function App() {
@@ -55,6 +58,7 @@ export default function App() {
           </Suspense>
         </section>
       </main>
+      <TrashUndoNotice />
     </div>
   );
 }

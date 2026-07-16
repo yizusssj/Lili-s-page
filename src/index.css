@@ -37,6 +37,339 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
+/* Papelera */
+.trashIntro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.trashIntro p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.trashIntro span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  color: #287f95;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.trashEmptyButton,
+.trashRestoreButton,
+.trashDeleteButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 12px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+}
+
+.trashEmptyButton {
+  padding: 9px 12px;
+  border: 1px solid rgba(190, 18, 60, 0.2);
+  background: rgba(255, 241, 242, 0.62);
+  color: #9f1239;
+}
+
+.trashFilters {
+  width: fit-content;
+  max-width: 100%;
+  display: flex;
+  gap: 5px;
+  padding: 5px;
+  overflow-x: auto;
+  border: 1px solid var(--control-border);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.36);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  scrollbar-width: none;
+}
+
+.trashFilters::-webkit-scrollbar {
+  display: none;
+}
+
+.trashFilters button {
+  padding: 8px 13px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.trashFilters .trashFilterActive {
+  background: rgba(159, 228, 245, 0.78);
+  color: #245c69;
+  box-shadow: 0 7px 18px rgba(63, 149, 169, 0.13), inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.trashError {
+  padding: 11px 13px;
+  border: 1px solid rgba(190, 18, 60, 0.2);
+  border-radius: 13px;
+  background: rgba(255, 241, 242, 0.7);
+  color: #9f1239;
+  font-size: 12px;
+}
+
+.trashList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.trashCard {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+  border-radius: 19px;
+  background: var(--glass-surface-strong);
+  box-shadow: 0 12px 30px rgba(76, 56, 91, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.trashPreview {
+  min-height: 124px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, rgba(159, 228, 245, 0.44), rgba(230, 215, 255, 0.45));
+  color: #49717b;
+}
+
+.trashPreviewPhoto img {
+  width: 100%;
+  height: 100%;
+  min-height: 124px;
+  display: block;
+  object-fit: cover;
+}
+
+.trashCardBody {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px;
+}
+
+.trashCardCopy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.trashCardCopy strong,
+.trashCardCopy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trashCardCopy strong {
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.trashCardCopy span {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.trashCardCopy small {
+  margin-top: 3px;
+  color: #287f95;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.trashCardActions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.trashRestoreButton {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid rgba(83, 179, 201, 0.24);
+  background: rgba(159, 228, 245, 0.48);
+  color: #245c69;
+}
+
+.trashDeleteButton {
+  padding: 8px 10px;
+  border: 1px solid rgba(190, 18, 60, 0.16);
+  background: rgba(255, 241, 242, 0.56);
+  color: #9f1239;
+}
+
+.trashEmptyButton:disabled,
+.trashRestoreButton:disabled,
+.trashDeleteButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.trashEmptyButton:not(:disabled):active,
+.trashRestoreButton:not(:disabled):active,
+.trashDeleteButton:not(:disabled):active {
+  transform: scale(0.98);
+}
+
+.trashEmptyState {
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.trashEmptyState > span {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 3px;
+  border: 1px solid var(--glass-highlight);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.46);
+  color: var(--text-muted);
+  box-shadow: 0 12px 28px rgba(75, 49, 91, 0.1);
+}
+
+.trashEmptyState p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.trashUndoNotice {
+  position: fixed;
+  right: max(20px, env(safe-area-inset-right));
+  bottom: max(20px, calc(env(safe-area-inset-bottom) + 14px));
+  z-index: 90;
+  max-width: min(440px, calc(100vw - 32px));
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 10px 10px 15px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 17px;
+  background: rgba(248, 246, 251, 0.88);
+  color: var(--text-primary);
+  box-shadow: 0 18px 45px rgba(53, 39, 67, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(24px) saturate(145%);
+  -webkit-backdrop-filter: blur(24px) saturate(145%);
+  animation: trashNoticeIn 220ms ease-out both;
+}
+
+.trashUndoNotice > span {
+  min-width: 0;
+  flex: 1;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.trashUndoNotice button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 11px;
+  background: rgba(159, 228, 245, 0.78);
+  color: #245c69;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.trashUndoNotice .trashUndoClose {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.46);
+  color: var(--text-secondary);
+}
+
+@keyframes trashNoticeIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 1050px) {
+  .trashList {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .trashIntro {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .trashFilters {
+    width: 100%;
+  }
+
+  .trashFilters button {
+    flex: 1 0 auto;
+  }
+
+  .trashCard {
+    grid-template-columns: 82px minmax(0, 1fr);
+    border-radius: 17px;
+  }
+
+  .trashPreview,
+  .trashPreviewPhoto img {
+    min-height: 132px;
+  }
+
+  .trashCardBody {
+    padding: 12px;
+  }
+
+  .trashDeleteButton span {
+    display: none;
+  }
+
+  .trashUndoNotice {
+    right: 12px;
+    bottom: max(12px, calc(env(safe-area-inset-bottom) + 10px));
+    left: 12px;
+    max-width: none;
+  }
+}
+
 /* Partidas a pantalla completa */
 html.arcadeGameActive,
 body.arcadeGameActive {

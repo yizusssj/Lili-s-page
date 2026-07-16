@@ -8,6 +8,7 @@ import {
   enqueueOfflineOperation,
   getOfflineSnapshot,
   hydrateOfflineMemories,
+  hydrateOfflineTrash,
   putOfflineImage,
   removeOfflineImage,
   removeOfflineImages,
@@ -32,7 +33,6 @@ import {
 import { WorkspaceContext } from "./workspaceContext.js";
 import {
   deleteAlbum as deleteAlbumRemote,
-  deleteCompletedTasks as deleteCompletedTasksRemote,
   deleteMemory as deleteMemoryRemote,
   deleteNote as deleteNoteRemote,
   deleteTask as deleteTaskRemote,
@@ -43,7 +43,16 @@ import {
   insertMemory,
   insertNote,
   insertTask,
+  restoreAlbum as restoreAlbumRemote,
+  restoreMemory as restoreMemoryRemote,
+  restoreNote as restoreNoteRemote,
+  restoreTask as restoreTaskRemote,
   savePriorities as savePrioritiesRemote,
+  trashAlbum as trashAlbumRemote,
+  trashCompletedTasks as trashCompletedTasksRemote,
+  trashMemory as trashMemoryRemote,
+  trashNote as trashNoteRemote,
+  trashTask as trashTaskRemote,
   updateAlbumCover as updateAlbumCoverRemote,
   updateAlbum as updateAlbumRemote,
   updateNote as updateNoteRemote,
@@ -78,7 +87,16 @@ function applyPendingNoteFields(note, fields) {
   };
 }
 
+function getTrashMemories(items) {
+  return items.flatMap((item) => {
+    if (item.type === "album") return item.memories ?? [];
+    if (item.type === "memory" && item.data) return [item.data];
+    return [];
+  });
+}
+
 const TASK_PRIORITIES = new Set(["low", "medium", "high"]);
+const TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 
 function normalizeTaskInput(value) {
   const input = typeof value === "string" ? { text: value } : value ?? {};
@@ -116,6 +134,8 @@ export default function WorkspaceProvider({ children }) {
   const [tasks, setTasks] = useState([]);
   const [notes, setNotes] = useState([]);
   const [memories, setMemories] = useState([]);
+  const [trash, setTrash] = useState([]);
+  const [lastTrashed, setLastTrashed] = useState(null);
   const [priorities, setPriorities] = useState([]);
   const [quickNote, setQuickNote] = useState("");
   const [loading, setLoading] = useState(true);
@@ -132,6 +152,7 @@ export default function WorkspaceProvider({ children }) {
   const tasksRef = useRef([]);
   const notesRef = useRef([]);
   const memoriesRef = useRef([]);
+  const trashRef = useRef([]);
   const prioritiesRef = useRef([]);
   const pendingWritesRef = useRef(0);
   const noteBuffersRef = useRef(new Map());
@@ -139,6 +160,7 @@ export default function WorkspaceProvider({ children }) {
   const priorityTimerRef = useRef(null);
   const priorityNeedsRetryRef = useRef(false);
   const syncingOfflineRef = useRef(false);
+  const purgingTrashRef = useRef(false);
 
   const updateBufferedWriteCount = useCallback(() => {
     setBufferedWrites(
@@ -168,6 +190,14 @@ export default function WorkspaceProvider({ children }) {
     setMemories(nextMemories);
   }, []);
 
+  const commitTrash = useCallback((nextTrash) => {
+    const sorted = [...nextTrash].sort((first, second) =>
+      String(second.deletedAt ?? "").localeCompare(String(first.deletedAt ?? "")),
+    );
+    trashRef.current = sorted;
+    setTrash(sorted);
+  }, []);
+
   const commitPriorities = useCallback((nextPriorities) => {
     prioritiesRef.current = nextPriorities;
     setPriorities(nextPriorities);
@@ -186,6 +216,7 @@ export default function WorkspaceProvider({ children }) {
       commitTasks(data.tasks);
       commitNotes(data.notes);
       commitMemories(data.memories);
+      commitTrash(data.trash ?? []);
       commitPriorities(data.priorities);
       commitQuickNote(data.quickNote);
     },
@@ -196,6 +227,7 @@ export default function WorkspaceProvider({ children }) {
       commitPriorities,
       commitQuickNote,
       commitTasks,
+      commitTrash,
     ],
   );
 
@@ -316,6 +348,7 @@ export default function WorkspaceProvider({ children }) {
         const cachedData = {
           ...cachedSnapshot.data,
           memories: await hydrateOfflineMemories(cachedSnapshot.data.memories ?? []),
+          trash: await hydrateOfflineTrash(cachedSnapshot.data.trash ?? []),
           priorities: cachedSnapshot.localDate === getLocalDateKey()
             ? cachedPriorities
             : cachedPriorities.map((priority) => ({ ...priority, done: false })),
@@ -369,6 +402,7 @@ export default function WorkspaceProvider({ children }) {
         nextWorkspace.id,
         getLocalDateKey(),
         memoriesRef.current,
+        trashRef.current,
       );
 
       if (data.priorities.length !== 3) {
@@ -380,8 +414,10 @@ export default function WorkspaceProvider({ children }) {
       const hydratedData = {
         ...data,
         memories: await hydrateOfflineMemories(data.memories),
+        trash: await hydrateOfflineTrash(data.trash),
       };
       revokeOfflineMemoryUrls(memoriesRef.current);
+      revokeOfflineMemoryUrls(getTrashMemories(trashRef.current));
       commitWorkspaceData(hydratedData);
       void cacheRemoteMemoryImages(data.memories, userId, nextWorkspace.id);
       setOfflineMode(false);
@@ -415,12 +451,15 @@ export default function WorkspaceProvider({ children }) {
         currentWorkspace.id,
         getLocalDateKey(),
         memoriesRef.current,
+        trashRef.current,
       );
       const hydratedData = {
         ...data,
         memories: await hydrateOfflineMemories(data.memories),
+        trash: await hydrateOfflineTrash(data.trash),
       };
       revokeOfflineMemoryUrls(memoriesRef.current);
+      revokeOfflineMemoryUrls(getTrashMemories(trashRef.current));
       commitWorkspaceData(hydratedData);
       void cacheRemoteMemoryImages(data.memories, userId, currentWorkspace.id);
       setOfflineMode(false);
@@ -486,10 +525,11 @@ export default function WorkspaceProvider({ children }) {
         priorities,
         quickNote,
         tasks,
+        trash,
       });
     }, 120);
     return () => window.clearTimeout(timerId);
-  }, [albums, memories, notes, priorities, quickNote, tasks, userId, workspace]);
+  }, [albums, memories, notes, priorities, quickNote, tasks, trash, userId, workspace]);
 
   useEffect(() => {
     if (userId) void requestPersistentStorage();
@@ -501,6 +541,7 @@ export default function WorkspaceProvider({ children }) {
       noteTimersRef.current.forEach((timerId) => window.clearTimeout(timerId));
       noteTimersRef.current.clear();
       revokeOfflineMemoryUrls(memoriesRef.current);
+      revokeOfflineMemoryUrls(getTrashMemories(trashRef.current));
     },
     [],
   );
@@ -760,48 +801,92 @@ export default function WorkspaceProvider({ children }) {
     async (taskId) => {
       const currentWorkspace = workspaceRef.current;
       const previousTasks = tasksRef.current;
-      if (!currentWorkspace || !previousTasks.some((task) => task.id === taskId)) return false;
+      const task = previousTasks.find((item) => item.id === taskId);
+      if (!currentWorkspace || !task) return false;
+
+      const previousTrash = trashRef.current;
+      const deletedAt = new Date().toISOString();
+      const trashItem = {
+        data: { ...task, deletedAt },
+        deletedAt,
+        id: taskId,
+        type: "task",
+      };
 
       commitTasks(previousTasks.filter((task) => task.id !== taskId));
+      commitTrash([trashItem, ...previousTrash.filter((item) =>
+        !(item.type === "task" && item.id === taskId),
+      )]);
       const result = await performWrite(
-        () => deleteTaskRemote(supabase, currentWorkspace.id, taskId),
+        () => trashTaskRemote(supabase, currentWorkspace.id, taskId),
         "No se pudo eliminar la tarea.",
         {
-          offlineOperation: { payload: { taskId }, type: "task.delete" },
+          fallbackData: trashItem.data,
+          offlineOperation: { payload: { taskId }, type: "task.trash" },
         },
       );
 
       if (result.error) {
         commitTasks(previousTasks);
+        commitTrash(previousTrash);
         return false;
       }
 
+      setLastTrashed({
+        id: crypto.randomUUID(),
+        items: [{ id: taskId, type: "task" }],
+        message: "Tarea movida a la papelera",
+      });
       return true;
     },
-    [commitTasks, performWrite],
+    [commitTasks, commitTrash, performWrite],
   );
 
   const clearCompletedTasks = useCallback(async () => {
     const currentWorkspace = workspaceRef.current;
     const previousTasks = tasksRef.current;
-    if (!currentWorkspace || !previousTasks.some((task) => task.done)) return true;
+    const completedTasks = previousTasks.filter((task) => task.done);
+    if (!currentWorkspace || completedTasks.length === 0) return true;
 
+    const previousTrash = trashRef.current;
+    const deletedAt = new Date().toISOString();
+    const trashItems = completedTasks.map((task) => ({
+      data: { ...task, deletedAt },
+      deletedAt,
+      id: task.id,
+      type: "task",
+    }));
     commitTasks(previousTasks.filter((task) => !task.done));
+    commitTrash([...trashItems, ...previousTrash]);
     const result = await performWrite(
-      () => deleteCompletedTasksRemote(supabase, currentWorkspace.id),
+      () => trashCompletedTasksRemote(
+        supabase,
+        currentWorkspace.id,
+        completedTasks.map((task) => task.id),
+      ),
       "No se pudieron limpiar las tareas terminadas.",
       {
-        offlineOperation: { payload: {}, type: "task.clearCompleted" },
+        fallbackData: completedTasks,
+        offlineOperation: {
+          payload: { taskIds: completedTasks.map((task) => task.id) },
+          type: "task.trashCompleted",
+        },
       },
     );
 
     if (result.error) {
       commitTasks(previousTasks);
+      commitTrash(previousTrash);
       return false;
     }
 
+    setLastTrashed({
+      id: crypto.randomUUID(),
+      items: completedTasks.map((task) => ({ id: task.id, type: "task" })),
+      message: `${completedTasks.length} tareas movidas a la papelera`,
+    });
     return true;
-  }, [commitTasks, performWrite]);
+  }, [commitTasks, commitTrash, performWrite]);
 
   const createNote = useCallback(async () => {
     const currentWorkspace = workspaceRef.current;
@@ -991,47 +1076,45 @@ export default function WorkspaceProvider({ children }) {
       const memory = memoriesRef.current.find((item) => item.id === memoryId);
       if (!currentWorkspace || !memory) return false;
       const previousMemories = memoriesRef.current;
-      const previousAlbums = albumsRef.current;
+      const previousTrash = trashRef.current;
+      const deletedAt = new Date().toISOString();
+      const trashItem = {
+        data: { ...memory, deletedAt },
+        deletedAt,
+        id: memoryId,
+        type: "memory",
+      };
 
       commitMemories(previousMemories.filter((item) => item.id !== memoryId));
-      commitAlbums(
-        previousAlbums.map((album) =>
-          album.coverMemoryId === memoryId
-            ? { ...album, coverMemoryId: null }
-            : album,
-        ),
-      );
+      commitTrash([trashItem, ...previousTrash.filter((item) =>
+        !(item.type === "memory" && item.id === memoryId),
+      )]);
 
       const result = await performWrite(
-        () =>
-          deleteMemoryRemote(
-            supabase,
-            currentWorkspace.id,
-            memory.id,
-            memory.storagePath,
-          ),
+        () => trashMemoryRemote(supabase, currentWorkspace.id, memory.id),
         "No se pudo eliminar el recuerdo.",
         {
+          fallbackData: trashItem.data,
           offlineOperation: {
-            payload: {
-              memoryId: memory.id,
-              storagePath: memory.storagePath,
-            },
-            type: "memory.delete",
+            payload: { memoryId: memory.id },
+            type: "memory.trash",
           },
         },
       );
 
       if (result.error) {
         commitMemories(previousMemories);
-        commitAlbums(previousAlbums);
+        commitTrash(previousTrash);
         return false;
       }
-      if (!result.queued) await removeOfflineImage(memoryId);
-      if (memory.offlineImageUrl && memory.imageUrl) URL.revokeObjectURL(memory.imageUrl);
+      setLastTrashed({
+        id: crypto.randomUUID(),
+        items: [{ id: memoryId, type: "memory" }],
+        message: "Foto movida a la papelera",
+      });
       return true;
     },
-    [commitAlbums, commitMemories, performWrite],
+    [commitMemories, commitTrash, performWrite],
   );
 
   const updateMemory = useCallback(
@@ -1216,26 +1299,29 @@ export default function WorkspaceProvider({ children }) {
       );
       const previousAlbums = albumsRef.current;
       const previousMemories = memoriesRef.current;
+      const previousTrash = trashRef.current;
+      const deletedAt = new Date().toISOString();
+      const trashItem = {
+        data: { ...album, deletedAt },
+        deletedAt,
+        id: albumId,
+        memories: albumMemories,
+        type: "album",
+      };
       commitMemories(previousMemories.filter((memory) => memory.albumId !== albumId));
       commitAlbums(previousAlbums.filter((item) => item.id !== albumId));
+      commitTrash([trashItem, ...previousTrash.filter((item) =>
+        !(item.type === "album" && item.id === albumId),
+      )]);
 
       const result = await performWrite(
-        () =>
-          deleteAlbumRemote(
-            supabase,
-            currentWorkspace.id,
-            albumId,
-            albumMemories.map((memory) => memory.storagePath),
-          ),
+        () => trashAlbumRemote(supabase, currentWorkspace.id, albumId),
         "No se pudo eliminar el álbum.",
         {
+          fallbackData: trashItem.data,
           offlineOperation: {
-            payload: {
-              albumId,
-              memoryIds: albumMemories.map((memory) => memory.id),
-              storagePaths: albumMemories.map((memory) => memory.storagePath),
-            },
-            type: "album.delete",
+            payload: { albumId },
+            type: "album.trash",
           },
         },
       );
@@ -1243,17 +1329,17 @@ export default function WorkspaceProvider({ children }) {
       if (result.error) {
         commitMemories(previousMemories);
         commitAlbums(previousAlbums);
+        commitTrash(previousTrash);
         return false;
       }
-      if (!result.queued) {
-        await removeOfflineImages(albumMemories.map((memory) => memory.id));
-      }
-      albumMemories.forEach((memory) => {
-        if (memory.offlineImageUrl && memory.imageUrl) URL.revokeObjectURL(memory.imageUrl);
+      setLastTrashed({
+        id: crypto.randomUUID(),
+        items: [{ id: albumId, type: "album" }],
+        message: "Álbum movido a la papelera",
       });
       return true;
     },
-    [commitAlbums, commitMemories, performWrite],
+    [commitAlbums, commitMemories, commitTrash, performWrite],
   );
 
   const flushNoteUpdate = useCallback(
@@ -1336,7 +1422,21 @@ export default function WorkspaceProvider({ children }) {
     async (noteId) => {
       const currentWorkspace = workspaceRef.current;
       const previousNotes = notesRef.current;
-      if (!currentWorkspace || !previousNotes.some((note) => note.id === noteId)) return false;
+      const note = previousNotes.find((item) => item.id === noteId);
+      if (!currentWorkspace || !note) return false;
+      const previousTrash = trashRef.current;
+      const deletedAt = new Date().toISOString();
+      const trashItem = {
+        data: { ...note, deletedAt },
+        deletedAt,
+        id: noteId,
+        type: "note",
+      };
+      const noteFields = {
+        content: note.content,
+        pinned: note.pinned,
+        title: note.title,
+      };
 
       const timerId = noteTimersRef.current.get(noteId);
       if (timerId) window.clearTimeout(timerId);
@@ -1344,24 +1444,272 @@ export default function WorkspaceProvider({ children }) {
       noteBuffersRef.current.delete(noteId);
       updateBufferedWriteCount();
       commitNotes(previousNotes.filter((note) => note.id !== noteId));
+      commitTrash([trashItem, ...previousTrash.filter((item) =>
+        !(item.type === "note" && item.id === noteId),
+      )]);
 
       const result = await performWrite(
-        () => deleteNoteRemote(supabase, currentWorkspace.id, noteId),
+        () => trashNoteRemote(supabase, currentWorkspace.id, noteId, noteFields),
         "No se pudo eliminar la nota.",
         {
-          offlineOperation: { payload: { noteId }, type: "note.delete" },
+          fallbackData: trashItem.data,
+          offlineOperation: {
+            payload: { fields: noteFields, noteId },
+            type: "note.trash",
+          },
         },
       );
 
       if (result.error) {
         commitNotes(previousNotes);
+        commitTrash(previousTrash);
         return false;
       }
 
+      setLastTrashed({
+        id: crypto.randomUUID(),
+        items: [{ id: noteId, type: "note" }],
+        message: "Nota movida a la papelera",
+      });
       return true;
     },
-    [commitNotes, performWrite, updateBufferedWriteCount],
+    [commitNotes, commitTrash, performWrite, updateBufferedWriteCount],
   );
+
+  const restoreTrashItem = useCallback(
+    async (type, itemId) => {
+      const currentWorkspace = workspaceRef.current;
+      const item = trashRef.current.find(
+        (candidate) => candidate.type === type && candidate.id === itemId,
+      );
+      if (!currentWorkspace || !item) return false;
+
+      if (
+        type === "memory"
+        && !albumsRef.current.some((album) => album.id === item.data.albumId)
+      ) {
+        setSyncError("Restaura primero el álbum al que pertenece esta foto.");
+        return false;
+      }
+
+      const previousAlbums = albumsRef.current;
+      const previousMemories = memoriesRef.current;
+      const previousNotes = notesRef.current;
+      const previousTasks = tasksRef.current;
+      const previousTrash = trashRef.current;
+      const restoredData = { ...item.data, deletedAt: null };
+
+      commitTrash(previousTrash.filter((candidate) =>
+        !(candidate.type === type && candidate.id === itemId),
+      ));
+
+      if (type === "task") {
+        commitTasks([restoredData, ...previousTasks]);
+      } else if (type === "note") {
+        commitNotes([restoredData, ...previousNotes]);
+      } else if (type === "memory") {
+        commitMemories(
+          [...previousMemories, restoredData].sort(
+            (first, second) => first.sortOrder - second.sortOrder,
+          ),
+        );
+      } else if (type === "album") {
+        const activeMemories = (item.memories ?? []).filter(
+          (memory) => !memory.deletedAt,
+        );
+        commitAlbums([restoredData, ...previousAlbums]);
+        commitMemories([...previousMemories, ...activeMemories]);
+      }
+
+      const remoteOperations = {
+        album: () => restoreAlbumRemote(supabase, currentWorkspace.id, itemId),
+        memory: () => restoreMemoryRemote(supabase, currentWorkspace.id, itemId),
+        note: () => restoreNoteRemote(supabase, currentWorkspace.id, itemId),
+        task: () => restoreTaskRemote(supabase, currentWorkspace.id, itemId),
+      };
+      const offlineIds = {
+        album: "albumId",
+        memory: "memoryId",
+        note: "noteId",
+        task: "taskId",
+      };
+      const result = await performWrite(
+        remoteOperations[type],
+        "No se pudo restaurar el elemento.",
+        {
+          fallbackData: restoredData,
+          offlineOperation: {
+            payload: { [offlineIds[type]]: itemId },
+            type: `${type}.restore`,
+          },
+        },
+      );
+
+      if (result.error) {
+        commitAlbums(previousAlbums);
+        commitMemories(previousMemories);
+        commitNotes(previousNotes);
+        commitTasks(previousTasks);
+        commitTrash(previousTrash);
+        return false;
+      }
+
+      setLastTrashed(null);
+      return true;
+    },
+    [commitAlbums, commitMemories, commitNotes, commitTasks, commitTrash, performWrite],
+  );
+
+  const permanentlyDeleteTrashItem = useCallback(
+    async (type, itemId) => {
+      const currentWorkspace = workspaceRef.current;
+      const item = trashRef.current.find(
+        (candidate) => candidate.type === type && candidate.id === itemId,
+      );
+      if (!currentWorkspace || !item) return false;
+      if (typeof navigator !== "undefined" && navigator.onLine === false) {
+        setSyncError("Conéctate a internet para eliminar elementos para siempre.");
+        return false;
+      }
+
+      const previousTrash = trashRef.current;
+      const albumMemories = type === "album"
+        ? [
+            ...(item.memories ?? []),
+            ...previousTrash
+              .filter((candidate) =>
+                candidate.type === "memory" && candidate.data?.albumId === itemId,
+              )
+              .map((candidate) => candidate.data),
+          ]
+        : [];
+      const uniqueAlbumMemories = [...new Map(
+        albumMemories.map((memory) => [memory.id, memory]),
+      ).values()];
+
+      commitTrash(previousTrash.filter((candidate) => {
+        if (candidate.type === type && candidate.id === itemId) return false;
+        if (type === "album" && candidate.type === "memory") {
+          return candidate.data?.albumId !== itemId;
+        }
+        return true;
+      }));
+
+      let operation;
+      if (type === "task") {
+        operation = () => deleteTaskRemote(supabase, currentWorkspace.id, itemId);
+      } else if (type === "note") {
+        operation = () => deleteNoteRemote(supabase, currentWorkspace.id, itemId);
+      } else if (type === "memory") {
+        operation = () => deleteMemoryRemote(
+          supabase,
+          currentWorkspace.id,
+          itemId,
+          item.data.storagePath,
+        );
+      } else {
+        operation = () => deleteAlbumRemote(
+          supabase,
+          currentWorkspace.id,
+          itemId,
+          uniqueAlbumMemories.map((memory) => memory.storagePath),
+        );
+      }
+
+      const result = await performWrite(
+        operation,
+        "No se pudo eliminar el elemento para siempre.",
+      );
+      if (result.error) {
+        commitTrash(previousTrash);
+        return false;
+      }
+
+      const removedMemories = type === "memory" ? [item.data] : uniqueAlbumMemories;
+      if (removedMemories.length > 0) {
+        await removeOfflineImages(removedMemories.map((memory) => memory.id));
+        removedMemories.forEach((memory) => {
+          if (memory.offlineImageUrl && memory.imageUrl) {
+            URL.revokeObjectURL(memory.imageUrl);
+          }
+        });
+      }
+      setLastTrashed((current) => current?.items.some(
+        (candidate) => candidate.type === type && candidate.id === itemId,
+      ) ? null : current);
+      return true;
+    },
+    [commitTrash, performWrite],
+  );
+
+  const emptyTrash = useCallback(async () => {
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      setSyncError("Conéctate a internet para vaciar la papelera.");
+      return false;
+    }
+
+    const snapshot = [...trashRef.current].sort((first, second) => {
+      if (first.type === "album") return -1;
+      if (second.type === "album") return 1;
+      return 0;
+    });
+    for (const item of snapshot) {
+      const stillExists = trashRef.current.some(
+        (candidate) => candidate.type === item.type && candidate.id === item.id,
+      );
+      if (stillExists && !await permanentlyDeleteTrashItem(item.type, item.id)) {
+        return false;
+      }
+    }
+    return true;
+  }, [permanentlyDeleteTrashItem]);
+
+  const undoLastTrash = useCallback(async () => {
+    const notice = lastTrashed;
+    if (!notice) return false;
+    let restored = true;
+    for (const item of notice.items) {
+      if (trashRef.current.some(
+        (candidate) => candidate.type === item.type && candidate.id === item.id,
+      )) {
+        restored = await restoreTrashItem(item.type, item.id) && restored;
+      }
+    }
+    if (restored) setLastTrashed(null);
+    return restored;
+  }, [lastTrashed, restoreTrashItem]);
+
+  const dismissTrashNotice = useCallback(() => setLastTrashed(null), []);
+
+  useEffect(() => {
+    if (
+      purgingTrashRef.current
+      || (typeof navigator !== "undefined" && navigator.onLine === false)
+    ) return;
+
+    const cutoff = Date.now() - TRASH_RETENTION_MS;
+    const expiredItems = trash.filter(
+      (item) => new Date(item.deletedAt).getTime() <= cutoff,
+    );
+    if (expiredItems.length === 0) return;
+
+    purgingTrashRef.current = true;
+    void (async () => {
+      const orderedItems = [...expiredItems].sort((first, second) => {
+        if (first.type === "album") return -1;
+        if (second.type === "album") return 1;
+        return 0;
+      });
+      for (const item of orderedItems) {
+        if (trashRef.current.some(
+          (candidate) => candidate.type === item.type && candidate.id === item.id,
+        )) {
+          await permanentlyDeleteTrashItem(item.type, item.id);
+        }
+      }
+      purgingTrashRef.current = false;
+    })();
+  }, [permanentlyDeleteTrashItem, trash]);
 
   const flushPriorities = useCallback(
     async (snapshot) => {
@@ -1531,19 +1879,24 @@ export default function WorkspaceProvider({ children }) {
     clearCompletedTasks,
     clearSyncError: () => setSyncError(null),
     createNote,
+    dismissTrashNotice,
+    emptyTrash,
     initializationError,
     loading,
+    lastTrashed,
     albums,
     memories,
     movePriority,
     notes,
     offlineMode,
     pendingSync,
+    permanentlyDeleteTrashItem,
     priorities,
     quickNote,
     refresh,
     retrySync,
     retryInitialization: loadWorkspace,
+    restoreTrashItem,
     removeNote,
     removeMemory,
     removeAlbum,
@@ -1554,6 +1907,7 @@ export default function WorkspaceProvider({ children }) {
     setAlbumCover,
     syncError,
     tasks,
+    trash,
     togglePriority,
     updateMemory,
     toggleTask,
@@ -1562,6 +1916,7 @@ export default function WorkspaceProvider({ children }) {
     updateNoteDraft,
     updateAlbum,
     updatePriorityText,
+    undoLastTrash,
     workspace,
   };
 

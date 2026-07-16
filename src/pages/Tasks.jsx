@@ -442,7 +442,7 @@ export default function Tasks() {
                         onClick={() => void deleteTask(task.id)}
                         style={styles.iconBtn}
                         className="glassIconButton"
-                        aria-label={`Eliminar ${task.text}`}
+                        aria-label={`Mover ${task.text} a la papelera`}
                       >
                         <Trash2 aria-hidden="true" size={14} strokeWidth={1.8} />
                       </button>

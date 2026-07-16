@@ -22,7 +22,9 @@ describe("Tareas", () => {
       screen.getByRole("checkbox", { name: "Desmarcar Comprar flores" }),
     ).toBeChecked();
 
-    await user.click(screen.getByRole("button", { name: "Eliminar Comprar flores" }));
+    await user.click(screen.getByRole("button", {
+      name: "Mover Comprar flores a la papelera",
+    }));
     expect(screen.queryByText("Comprar flores")).not.toBeInTheDocument();
   });
 

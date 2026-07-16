@@ -89,6 +89,19 @@ function stripTransientMemoryFields(memory) {
   return persisted;
 }
 
+function stripTransientTrashFields(item) {
+  if (item.type === "album") {
+    return {
+      ...item,
+      memories: (item.memories ?? []).map(stripTransientMemoryFields),
+    };
+  }
+  if (item.type === "memory" && item.data) {
+    return { ...item, data: stripTransientMemoryFields(item.data) };
+  }
+  return item;
+}
+
 export async function saveOfflineSnapshot(userId, workspace, data) {
   if (!userId || !workspace) return false;
 
@@ -98,6 +111,7 @@ export async function saveOfflineSnapshot(userId, workspace, data) {
     data: {
       ...data,
       memories: data.memories.map(stripTransientMemoryFields),
+      trash: (data.trash ?? []).map(stripTransientTrashFields),
     },
     localDate: getLocalDateKey(),
     savedAt: new Date().toISOString(),
@@ -224,6 +238,22 @@ export async function hydrateOfflineMemories(memories) {
       imageUrlExpiresAt: Number.POSITIVE_INFINITY,
       offlineImageUrl: true,
     };
+  }));
+}
+
+export async function hydrateOfflineTrash(items = []) {
+  return Promise.all(items.map(async (item) => {
+    if (item.type === "album") {
+      return {
+        ...item,
+        memories: await hydrateOfflineMemories(item.memories ?? []),
+      };
+    }
+    if (item.type === "memory" && item.data) {
+      const [memory] = await hydrateOfflineMemories([item.data]);
+      return { ...item, data: memory };
+    }
+    return item;
   }));
 }
 

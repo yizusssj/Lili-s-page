@@ -14,6 +14,7 @@ function WorkspaceHarness({ children, initialData }) {
   const [tasks, setTasks] = useState(initialData.tasks ?? []);
   const [notes, setNotes] = useState(initialData.notes ?? []);
   const [memories, setMemories] = useState(initialData.memories ?? []);
+  const [trash, setTrash] = useState(initialData.trash ?? []);
   const [priorities, setPriorities] = useState(
     initialData.priorities ?? DEFAULT_PRIORITIES,
   );
@@ -64,6 +65,25 @@ function WorkspaceHarness({ children, initialData }) {
 
   async function removeTask(taskId) {
     setTasks((current) => current.filter((task) => task.id !== taskId));
+    return true;
+  }
+
+  async function restoreTrashItem(type, itemId) {
+    const item = trash.find(
+      (candidate) => candidate.type === type && candidate.id === itemId,
+    );
+    if (!item) return false;
+    const restored = { ...item.data, deletedAt: null };
+    setTrash((current) => current.filter(
+      (candidate) => !(candidate.type === type && candidate.id === itemId),
+    ));
+    if (type === "task") setTasks((current) => [restored, ...current]);
+    if (type === "note") setNotes((current) => [restored, ...current]);
+    if (type === "memory") setMemories((current) => [restored, ...current]);
+    if (type === "album") {
+      setAlbums((current) => [restored, ...current]);
+      setMemories((current) => [...current, ...(item.memories ?? [])]);
+    }
     return true;
   }
 
@@ -149,6 +169,11 @@ function WorkspaceHarness({ children, initialData }) {
     },
     clearSyncError: () => {},
     createNote,
+    dismissTrashNotice: () => {},
+    emptyTrash: async () => {
+      setTrash([]);
+      return true;
+    },
     initializationError: null,
     loading: false,
     memories,
@@ -161,7 +186,14 @@ function WorkspaceHarness({ children, initialData }) {
       });
     },
     notes,
+    offlineMode: false,
     priorities,
+    permanentlyDeleteTrashItem: async (type, itemId) => {
+      setTrash((current) => current.filter(
+        (candidate) => !(candidate.type === type && candidate.id === itemId),
+      ));
+      return true;
+    },
     quickNote,
     refresh: async () => true,
     removeNote: async (noteId) => {
@@ -193,6 +225,7 @@ function WorkspaceHarness({ children, initialData }) {
       ),
     retryInitialization: async () => {},
     retrySync: async () => true,
+    restoreTrashItem,
     saveQuickNote: async (content) => {
       setQuickNote(content);
       return true;
@@ -208,6 +241,7 @@ function WorkspaceHarness({ children, initialData }) {
     },
     syncError: null,
     tasks,
+    trash,
     togglePriority: (priorityId) =>
       changePriorities((current) =>
         current.map((priority) =>
@@ -260,6 +294,7 @@ function WorkspaceHarness({ children, initialData }) {
           priority.id === priorityId ? { ...priority, text } : priority,
         ),
       ),
+    undoLastTrash: async () => true,
     workspace: { id: "workspace-test", name: "Lili's Workspace", role: "owner" },
   };
 

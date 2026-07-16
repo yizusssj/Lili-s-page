@@ -59,7 +59,7 @@ export default function Notes() {
   async function deleteSelectedNote() {
     if (!selectedNote) return;
     const label = selectedNote.title.trim() || "Sin título";
-    if (!window.confirm(`¿Eliminar la nota “${label}”? Esta acción no se puede deshacer.`)) return;
+    if (!window.confirm(`¿Mover la nota “${label}” a la papelera? Podrás recuperarla durante 30 días.`)) return;
 
     const nextNotes = notes.filter((note) => note.id !== selectedNote.id);
     setSelectedId(nextNotes[0]?.id ?? null);
@@ -201,7 +201,7 @@ export default function Notes() {
                   style={styles.dangerBtn}
                   onClick={() => void deleteSelectedNote()}
                 >
-                  Eliminar
+                  Papelera
                 </button>
               </div>
 

@@ -11,7 +11,16 @@ const repository = vi.hoisted(() => ({
   insertMemory: vi.fn(),
   insertNote: vi.fn(),
   insertTask: vi.fn(async (_client, _workspaceId, _userId, task) => task),
+  restoreAlbum: vi.fn(),
+  restoreMemory: vi.fn(),
+  restoreNote: vi.fn(),
+  restoreTask: vi.fn(),
   savePriorities: vi.fn(),
+  trashAlbum: vi.fn(),
+  trashCompletedTasks: vi.fn(),
+  trashMemory: vi.fn(),
+  trashNote: vi.fn(),
+  trashTask: vi.fn(),
   updateAlbum: vi.fn(),
   updateAlbumCover: vi.fn(),
   updateMemory: vi.fn(),
@@ -104,6 +113,39 @@ describe("offline synchronization", () => {
       "memory-1",
       { description: "Un día bonito", title: "Paseo" },
     );
+    expect(await countOfflineOperations(userId, workspaceId)).toBe(0);
+  });
+
+  it("sincroniza papelera y restauracion en el mismo orden", async () => {
+    const userId = "trash-sync-user";
+    const workspaceId = "trash-sync-workspace";
+    await enqueueOfflineOperation({
+      payload: { taskId: "task-trash" },
+      type: "task.trash",
+      userId,
+      workspaceId,
+    });
+    await enqueueOfflineOperation({
+      payload: { taskId: "task-trash" },
+      type: "task.restore",
+      userId,
+      workspaceId,
+    });
+
+    await flushOfflineOperations({ name: "supabase-client" }, userId, workspaceId);
+
+    expect(repository.trashTask).toHaveBeenCalledWith(
+      expect.anything(),
+      workspaceId,
+      "task-trash",
+    );
+    expect(repository.restoreTask).toHaveBeenCalledWith(
+      expect.anything(),
+      workspaceId,
+      "task-trash",
+    );
+    expect(repository.trashTask.mock.invocationCallOrder[0])
+      .toBeLessThan(repository.restoreTask.mock.invocationCallOrder[0]);
     expect(await countOfflineOperations(userId, workspaceId)).toBe(0);
   });
 });
