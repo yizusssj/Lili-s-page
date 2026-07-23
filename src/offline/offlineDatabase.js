@@ -1,7 +1,7 @@
 import { getLocalDateKey } from "../utils/date.js";
 
 const DATABASE_NAME = "lili-offline-v1";
-const DATABASE_VERSION = 1;
+const DATABASE_VERSION = 2;
 const SNAPSHOT_STORE = "snapshots";
 const OPERATION_STORE = "operations";
 const IMAGE_STORE = "images";
@@ -37,9 +37,16 @@ function openDatabase() {
         operations.createIndex("by_user", "userId", { unique: false });
       }
 
+      let images;
       if (!database.objectStoreNames.contains(IMAGE_STORE)) {
-        const images = database.createObjectStore(IMAGE_STORE, { keyPath: "memoryId" });
+        images = database.createObjectStore(IMAGE_STORE, { keyPath: "memoryId" });
         images.createIndex("by_workspace", "workspaceId", { unique: false });
+      } else {
+        images = request.transaction.objectStore(IMAGE_STORE);
+      }
+
+      if (!images.indexNames.contains("by_user")) {
+        images.createIndex("by_user", "userId", { unique: false });
       }
     };
 
@@ -187,6 +194,49 @@ export async function removeOfflineOperation(operationId) {
 
 export async function countOfflineOperations(userId, workspaceId) {
   return (await listOfflineOperations(userId, workspaceId)).length;
+}
+
+export async function clearOfflineDataForUser(userId) {
+  if (!userId) return false;
+
+  try {
+    const database = await openDatabase();
+    if (!database) return false;
+
+    await new Promise((resolve, reject) => {
+      const transaction = database.transaction(
+        [SNAPSHOT_STORE, OPERATION_STORE, IMAGE_STORE],
+        "readwrite",
+      );
+
+      transaction.objectStore(SNAPSHOT_STORE).delete(userId);
+
+      for (const storeName of [OPERATION_STORE, IMAGE_STORE]) {
+        const store = transaction.objectStore(storeName);
+        const request = store.index("by_user").openCursor(IDBKeyRange.only(userId));
+
+        request.onsuccess = () => {
+          const cursor = request.result;
+          if (!cursor) return;
+          cursor.delete();
+          cursor.continue();
+        };
+        request.onerror = () => transaction.abort();
+      }
+
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(
+        transaction.error ?? new Error("No se pudieron borrar los datos offline."),
+      );
+      transaction.onabort = () => reject(
+        transaction.error ?? new Error("Se canceló el borrado de datos offline."),
+      );
+    });
+
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function putOfflineImage({ blob, memoryId, storagePath, userId, workspaceId }) {

@@ -2,6 +2,7 @@ import "fake-indexeddb/auto";
 import { Blob as NativeBlob } from "node:buffer";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import {
+  clearOfflineDataForUser,
   countOfflineOperations,
   enqueueOfflineOperation,
   getOfflineImage,
@@ -10,7 +11,6 @@ import {
   hydrateOfflineTrash,
   listOfflineOperations,
   putOfflineImage,
-  removeOfflineImage,
   removeOfflineOperation,
   saveOfflineSnapshot,
 } from "./offlineDatabase.js";
@@ -105,8 +105,9 @@ describe("offline database", () => {
     });
     expect((await hydrateOfflineTrash(snapshot.data.trash))[0].data.imageUrl).toBeUndefined();
 
-    await removeOfflineImage("memory-1");
+    expect(await clearOfflineDataForUser(userId)).toBe(true);
+    expect(await getOfflineSnapshot(userId)).toBeUndefined();
+    expect(await countOfflineOperations(userId, workspace.id)).toBe(0);
     expect(await getOfflineImage("memory-1")).toBeUndefined();
-    await removeOfflineOperation(second.id);
   });
 });

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { isSupabaseConfigured, supabase } from "../lib/supabase.js";
+import { clearOfflineDataForUser } from "../offline/offlineDatabase.js";
 import { AuthContext } from "./authContext.js";
 
 const OFFLINE_USER_KEY = "lili:offline-user-v1";
@@ -111,14 +112,20 @@ export default function AuthProvider({ children }) {
   const signOut = useCallback(async () => {
     if (!supabase) return { error: new Error("Supabase no está configurado.") };
 
+    const userId = session?.user?.id;
     window.localStorage.removeItem(OFFLINE_USER_KEY);
-    setSession(null);
+
+    let result;
     try {
-      return await supabase.auth.signOut({ scope: "local" });
+      result = await supabase.auth.signOut({ scope: "local" });
     } catch (error) {
-      return { error: normalizeError(error) };
+      result = { error: normalizeError(error) };
     }
-  }, []);
+
+    await clearOfflineDataForUser(userId);
+    setSession(null);
+    return result;
+  }, [session?.user?.id]);
 
   const value = useMemo(
     () => ({
