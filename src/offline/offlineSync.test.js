@@ -32,7 +32,18 @@ const repository = vi.hoisted(() => ({
   })),
 }));
 
+const closetRepository = vi.hoisted(() => ({
+  deleteClothingItem: vi.fn(),
+  deleteOutfit: vi.fn(),
+  insertClothingItem: vi.fn(),
+  markAllClothesAvailable: vi.fn(),
+  markOutfitWorn: vi.fn(),
+  saveOutfit: vi.fn(),
+  updateClothingItem: vi.fn(),
+}));
+
 vi.mock("../workspace/workspaceRepository.js", () => repository);
+vi.mock("../closet/closetRepository.js", () => closetRepository);
 
 import {
   countOfflineOperations,
@@ -146,6 +157,47 @@ describe("offline synchronization", () => {
     );
     expect(repository.trashTask.mock.invocationCallOrder[0])
       .toBeLessThan(repository.restoreTask.mock.invocationCallOrder[0]);
+    expect(await countOfflineOperations(userId, workspaceId)).toBe(0);
+  });
+
+  it("sincroniza cambios del clóset y sus outfits", async () => {
+    const userId = "closet-sync-user";
+    const workspaceId = "closet-sync-workspace";
+    const outfit = {
+      id: "outfit-sync",
+      itemIds: ["clothing-sync"],
+      name: "Salida",
+    };
+
+    await enqueueOfflineOperation({
+      payload: {
+        fields: { status: "laundry" },
+        itemId: "clothing-sync",
+      },
+      type: "clothing.update",
+      userId,
+      workspaceId,
+    });
+    await enqueueOfflineOperation({
+      payload: { outfit },
+      type: "outfit.save",
+      userId,
+      workspaceId,
+    });
+
+    await flushOfflineOperations({ name: "supabase-client" }, userId, workspaceId);
+
+    expect(closetRepository.updateClothingItem).toHaveBeenCalledWith(
+      expect.anything(),
+      workspaceId,
+      "clothing-sync",
+      { status: "laundry" },
+    );
+    expect(closetRepository.saveOutfit).toHaveBeenCalledWith(
+      expect.anything(),
+      workspaceId,
+      outfit,
+    );
     expect(await countOfflineOperations(userId, workspaceId)).toBe(0);
   });
 });

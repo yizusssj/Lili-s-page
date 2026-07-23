@@ -13,6 +13,7 @@ import { styles } from "./styles.jsx";
 
 const Calendar = lazy(() => import("../pages/Calendar.jsx"));
 const Arcade = lazy(() => import("../pages/Arcade.jsx"));
+const Closet = lazy(() => import("../pages/Closet.jsx"));
 const Trash = lazy(() => import("../pages/Trash.jsx"));
 
 const PAGE_COMPONENTS = {
@@ -21,6 +22,7 @@ const PAGE_COMPONENTS = {
   calendar: Calendar,
   notes: Notes,
   memories: Memories,
+  closet: Closet,
   games: Arcade,
   pinterest: Pinterest,
   trash: Trash,

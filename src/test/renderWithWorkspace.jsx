@@ -295,6 +295,7 @@ function WorkspaceHarness({ children, initialData }) {
         ),
       ),
     undoLastTrash: async () => true,
+    userId: initialData.userId ?? "user-test",
     workspace: { id: "workspace-test", name: "Lili's Workspace", role: "owner" },
   };
 

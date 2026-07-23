@@ -1,8 +1,9 @@
 import { getLocalDateKey } from "../utils/date.js";
 
 const DATABASE_NAME = "lili-offline-v1";
-const DATABASE_VERSION = 2;
+const DATABASE_VERSION = 3;
 const SNAPSHOT_STORE = "snapshots";
+const CLOSET_SNAPSHOT_STORE = "closetSnapshots";
 const OPERATION_STORE = "operations";
 const IMAGE_STORE = "images";
 
@@ -30,6 +31,10 @@ function openDatabase() {
 
       if (!database.objectStoreNames.contains(SNAPSHOT_STORE)) {
         database.createObjectStore(SNAPSHOT_STORE, { keyPath: "userId" });
+      }
+
+      if (!database.objectStoreNames.contains(CLOSET_SNAPSHOT_STORE)) {
+        database.createObjectStore(CLOSET_SNAPSHOT_STORE, { keyPath: "userId" });
       }
 
       if (!database.objectStoreNames.contains(OPERATION_STORE)) {
@@ -141,6 +146,45 @@ export async function getOfflineSnapshot(userId) {
   }
 }
 
+export async function saveClosetSnapshot(userId, workspaceId, data) {
+  if (!userId || !workspaceId) return false;
+
+  const snapshot = {
+    userId,
+    workspaceId,
+    data: {
+      items: (data.items ?? []).map(stripTransientMemoryFields),
+      outfits: data.outfits ?? [],
+    },
+    savedAt: new Date().toISOString(),
+  };
+
+  try {
+    await executeStore(
+      CLOSET_SNAPSHOT_STORE,
+      "readwrite",
+      (store) => store.put(snapshot),
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function getClosetSnapshot(userId, workspaceId) {
+  if (!userId || !workspaceId) return null;
+  try {
+    const snapshot = await executeStore(
+      CLOSET_SNAPSHOT_STORE,
+      "readonly",
+      (store) => store.get(userId),
+    );
+    return snapshot?.workspaceId === workspaceId ? snapshot : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function enqueueOfflineOperation({ payload, type, userId, workspaceId }) {
   lastOperationOrder = Math.max(Date.now() * 1000, lastOperationOrder + 1);
   const operation = {
@@ -205,11 +249,12 @@ export async function clearOfflineDataForUser(userId) {
 
     await new Promise((resolve, reject) => {
       const transaction = database.transaction(
-        [SNAPSHOT_STORE, OPERATION_STORE, IMAGE_STORE],
+        [SNAPSHOT_STORE, CLOSET_SNAPSHOT_STORE, OPERATION_STORE, IMAGE_STORE],
         "readwrite",
       );
 
       transaction.objectStore(SNAPSHOT_STORE).delete(userId);
+      transaction.objectStore(CLOSET_SNAPSHOT_STORE).delete(userId);
 
       for (const storeName of [OPERATION_STORE, IMAGE_STORE]) {
         const store = transaction.objectStore(storeName);
@@ -326,6 +371,14 @@ export async function cacheRemoteMemoryImages(memories, userId, workspaceId) {
       // La metadata sigue disponible aunque el dispositivo no tenga espacio para la foto.
     }
   }
+}
+
+export async function hydrateOfflineClothingItems(items) {
+  return hydrateOfflineMemories(items);
+}
+
+export async function cacheRemoteClothingImages(items, userId, workspaceId) {
+  return cacheRemoteMemoryImages(items, userId, workspaceId);
 }
 
 export function revokeOfflineMemoryUrls(memories) {

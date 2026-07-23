@@ -5,13 +5,16 @@ import {
   clearOfflineDataForUser,
   countOfflineOperations,
   enqueueOfflineOperation,
+  getClosetSnapshot,
   getOfflineImage,
   getOfflineSnapshot,
+  hydrateOfflineClothingItems,
   hydrateOfflineMemories,
   hydrateOfflineTrash,
   listOfflineOperations,
   putOfflineImage,
   removeOfflineOperation,
+  saveClosetSnapshot,
   saveOfflineSnapshot,
 } from "./offlineDatabase.js";
 
@@ -105,9 +108,36 @@ describe("offline database", () => {
     });
     expect((await hydrateOfflineTrash(snapshot.data.trash))[0].data.imageUrl).toBeUndefined();
 
+    await saveClosetSnapshot(userId, workspace.id, {
+      items: [{
+        id: "clothing-1",
+        imageUrl: "https://signed.example.test/clothing.jpg",
+        storagePath: "offline-workspace/clothing-1.jpg",
+      }],
+      outfits: [{ id: "outfit-1", itemIds: ["clothing-1"] }],
+    });
+    const closetSnapshot = await getClosetSnapshot(userId, workspace.id);
+    expect(closetSnapshot.data.items[0]).not.toHaveProperty("imageUrl");
+    expect(closetSnapshot.data.outfits[0].itemIds).toEqual(["clothing-1"]);
+
+    await putOfflineImage({
+      blob,
+      memoryId: "clothing-1",
+      storagePath: "offline-workspace/clothing-1.jpg",
+      userId,
+      workspaceId: workspace.id,
+    });
+    expect((await hydrateOfflineClothingItems(closetSnapshot.data.items))[0])
+      .toMatchObject({
+        imageUrl: "blob:lili-offline-test",
+        offlineImageUrl: true,
+      });
+
     expect(await clearOfflineDataForUser(userId)).toBe(true);
     expect(await getOfflineSnapshot(userId)).toBeUndefined();
+    expect(await getClosetSnapshot(userId, workspace.id)).toBeNull();
     expect(await countOfflineOperations(userId, workspace.id)).toBe(0);
     expect(await getOfflineImage("memory-1")).toBeUndefined();
+    expect(await getOfflineImage("clothing-1")).toBeUndefined();
   });
 });

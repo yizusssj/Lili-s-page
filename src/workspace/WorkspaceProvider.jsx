@@ -1917,6 +1917,7 @@ export default function WorkspaceProvider({ children }) {
     updateAlbum,
     updatePriorityText,
     undoLastTrash,
+    userId,
     workspace,
   };
 

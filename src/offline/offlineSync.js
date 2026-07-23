@@ -32,6 +32,15 @@ import {
   updateMemory,
   updateTask,
 } from "../workspace/workspaceRepository.js";
+import {
+  deleteClothingItem,
+  deleteOutfit,
+  insertClothingItem,
+  markAllClothesAvailable,
+  markOutfitWorn,
+  saveOutfit,
+  updateClothingItem,
+} from "../closet/closetRepository.js";
 
 export function isNetworkError(error) {
   if (typeof navigator !== "undefined" && navigator.onLine === false) return true;
@@ -116,6 +125,43 @@ async function executeOperation(client, operation) {
       return savePriorities(client, workspaceId, payload.priorities, payload.localDate);
     case "quickNote.update":
       return updateQuickNote(client, workspaceId, payload.content);
+    case "clothing.insert": {
+      const storedImage = await getOfflineImage(payload.item.id);
+      if (!storedImage?.blob) throw new Error("Falta la fotografía de la prenda.");
+      return insertClothingItem(client, workspaceId, userId, payload.item, {
+        blob: storedImage.blob,
+        mimeType: storedImage.blob.type || "image/jpeg",
+      });
+    }
+    case "clothing.update":
+      return updateClothingItem(
+        client,
+        workspaceId,
+        payload.itemId,
+        payload.fields,
+      );
+    case "clothing.delete":
+      await deleteClothingItem(
+        client,
+        workspaceId,
+        payload.itemId,
+        payload.storagePath,
+      );
+      await removeOfflineImage(payload.itemId);
+      return null;
+    case "outfit.save":
+      return saveOutfit(client, workspaceId, payload.outfit);
+    case "outfit.delete":
+      return deleteOutfit(client, workspaceId, payload.outfitId);
+    case "outfit.worn":
+      return markOutfitWorn(
+        client,
+        workspaceId,
+        payload.outfitId,
+        payload.wornDate,
+      );
+    case "closet.cleanAll":
+      return markAllClothesAvailable(client, workspaceId);
     default:
       throw new Error(`Operación offline desconocida: ${type}`);
   }
