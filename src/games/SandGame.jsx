@@ -29,6 +29,7 @@ import {
 
 const BEST_SCORES_KEY = "lili_game_sand_best_v1";
 const EMPTY_BEST_SCORES = { intense: 0, normal: 0, relaxed: 0 };
+const PIECE_INPUT_COOLDOWN_MS = 90;
 const RGB_PALETTE = [
   null,
   [97, 217, 232],
@@ -185,6 +186,13 @@ function Metric({ label, value }) {
   );
 }
 
+function didLockSandPiece(previous, next) {
+  return next !== previous
+    && previous.active
+    && next.effectId !== previous.effectId
+    && ["land", "over"].includes(next.lastEffect);
+}
+
 export default function SandGame({ onBack }) {
   const [difficulty, setDifficulty] = useState("normal");
   const [bestScores, setBestScores] = useState(readBestScores);
@@ -192,6 +200,7 @@ export default function SandGame({ onBack }) {
   const engineRef = useRef(initialGame);
   const [ui, setUi] = useState(() => toUi(initialGame));
   const canvasRef = useRef(null);
+  const inputCooldownUntilRef = useRef(0);
 
   const syncUi = useCallback((game) => {
     const nextUi = toUi(game);
@@ -213,37 +222,62 @@ export default function SandGame({ onBack }) {
     drawSand(canvasRef.current, engineRef.current);
   }, [syncUi]);
 
+  const releaseInputCooldown = useCallback(() => {
+    inputCooldownUntilRef.current = 0;
+  }, []);
+
+  const holdInputAfterLock = useCallback(() => {
+    inputCooldownUntilRef.current = performance.now() + PIECE_INPUT_COOLDOWN_MS;
+  }, []);
+
+  const applyPieceAction = useCallback((transform) => {
+    if (
+      engineRef.current.status === "running"
+      && performance.now() < inputCooldownUntilRef.current
+    ) {
+      return;
+    }
+    const previous = engineRef.current;
+    const next = transform(previous);
+    if (didLockSandPiece(previous, next)) holdInputAfterLock();
+    engineRef.current = next;
+    syncUi(engineRef.current);
+    drawSand(canvasRef.current, engineRef.current);
+  }, [holdInputAfterLock, syncUi]);
+
   const moveLeft = useCallback(() => {
-    apply((game) => moveSandPiece(game, -1, 0));
-  }, [apply]);
+    applyPieceAction((game) => moveSandPiece(game, -1, 0));
+  }, [applyPieceAction]);
   const moveRight = useCallback(() => {
-    apply((game) => moveSandPiece(game, 1, 0));
-  }, [apply]);
+    applyPieceAction((game) => moveSandPiece(game, 1, 0));
+  }, [applyPieceAction]);
   const moveDown = useCallback(() => {
-    apply((game) => softDropSandPiece(game));
-  }, [apply]);
+    applyPieceAction((game) => softDropSandPiece(game));
+  }, [applyPieceAction]);
   const rotate = useCallback(() => {
-    apply((game) => rotateSandPiece(game));
-  }, [apply]);
+    applyPieceAction((game) => rotateSandPiece(game));
+  }, [applyPieceAction]);
   const drop = useCallback(() => {
-    apply((game) => hardDropSandPiece(game));
-  }, [apply]);
+    applyPieceAction((game) => hardDropSandPiece(game));
+  }, [applyPieceAction]);
   const pause = useCallback(() => {
     apply((game) => toggleSandPause(game));
   }, [apply]);
 
   const begin = useCallback(() => {
+    releaseInputCooldown();
     engineRef.current = startSandGame(difficulty);
     syncUi(engineRef.current);
     drawSand(canvasRef.current, engineRef.current);
-  }, [difficulty, syncUi]);
+  }, [difficulty, releaseInputCooldown, syncUi]);
 
   const changeDifficulty = useCallback((nextDifficulty) => {
+    releaseInputCooldown();
     setDifficulty(nextDifficulty);
     engineRef.current = createSandGame(nextDifficulty);
     syncUi(engineRef.current);
     drawSand(canvasRef.current, engineRef.current);
-  }, [syncUi]);
+  }, [releaseInputCooldown, syncUi]);
 
   useEffect(() => {
     let animationFrame;

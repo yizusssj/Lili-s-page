@@ -1989,6 +1989,72 @@ body.arcadeGameActive {
   animation: mergeBoardPulse 240ms ease-out both;
 }
 
+.mergeGameBoardMove-left .mergeGameGrid {
+  animation: mergeBoardNudgeLeft 190ms ease-out both;
+}
+
+.mergeGameBoardMove-right .mergeGameGrid {
+  animation: mergeBoardNudgeRight 190ms ease-out both;
+}
+
+.mergeGameBoardMove-up .mergeGameGrid {
+  animation: mergeBoardNudgeUp 190ms ease-out both;
+}
+
+.mergeGameBoardMove-down .mergeGameGrid {
+  animation: mergeBoardNudgeDown 190ms ease-out both;
+}
+
+.mergeGameMoveHint {
+  width: 76px;
+  height: 76px;
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  margin: auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 22px;
+  background: rgba(255, 248, 221, 0.36);
+  color: #fff6cf;
+  box-shadow:
+    0 16px 34px rgba(83, 54, 34, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.42);
+  pointer-events: none;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: mergeDirectionHint 420ms ease-out both;
+}
+
+.mergeGameMoveHint-left {
+  --hint-from-x: 30px;
+  --hint-from-y: 0px;
+  --hint-to-x: -62px;
+  --hint-to-y: 0px;
+}
+
+.mergeGameMoveHint-right {
+  --hint-from-x: -30px;
+  --hint-from-y: 0px;
+  --hint-to-x: 62px;
+  --hint-to-y: 0px;
+}
+
+.mergeGameMoveHint-up {
+  --hint-from-x: 0px;
+  --hint-from-y: 30px;
+  --hint-to-x: 0px;
+  --hint-to-y: -62px;
+}
+
+.mergeGameMoveHint-down {
+  --hint-from-x: 0px;
+  --hint-from-y: -30px;
+  --hint-to-x: 0px;
+  --hint-to-y: 62px;
+}
+
 .mergeGameOverlay {
   background: rgba(73, 54, 42, 0.72);
 }
@@ -2051,6 +2117,41 @@ body.arcadeGameActive {
 @keyframes mergeBoardPulse {
   0%, 100% { filter: brightness(1); transform: scale(1); }
   45% { filter: brightness(1.08); transform: scale(1.006); }
+}
+
+@keyframes mergeBoardNudgeLeft {
+  0%, 100% { transform: translateX(0); }
+  38% { transform: translateX(-7px); }
+}
+
+@keyframes mergeBoardNudgeRight {
+  0%, 100% { transform: translateX(0); }
+  38% { transform: translateX(7px); }
+}
+
+@keyframes mergeBoardNudgeUp {
+  0%, 100% { transform: translateY(0); }
+  38% { transform: translateY(-7px); }
+}
+
+@keyframes mergeBoardNudgeDown {
+  0%, 100% { transform: translateY(0); }
+  38% { transform: translateY(7px); }
+}
+
+@keyframes mergeDirectionHint {
+  0% {
+    opacity: 0;
+    transform: translate(var(--hint-from-x), var(--hint-from-y)) scale(0.72);
+  }
+  34% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--hint-to-x), var(--hint-to-y)) scale(1.08);
+  }
 }
 
 @media (max-width: 720px) {
@@ -2418,6 +2519,8 @@ body.arcadeGameActive {
   .snakeGameBoardCrash,
   .mergeGameTile,
   .mergeGameGain,
+  .mergeGameGrid,
+  .mergeGameMoveHint,
   .mergeGameBoardMerged {
     animation: none;
   }

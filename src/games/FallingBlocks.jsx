@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   Keyboard,
@@ -27,6 +27,7 @@ import {
 
 const BEST_SCORE_KEY = "lili_game_blocks_best_v1";
 const LINE_CLEAR_DELAY = 240;
+const PIECE_INPUT_COOLDOWN_MS = 90;
 const BLOCK_SPEEDS = {
   intense: { base: 500, minimum: 90 },
   normal: { base: 720, minimum: 110 },
@@ -58,10 +59,18 @@ function Metric({ label, value }) {
   );
 }
 
+function didLockPiece(previous, next) {
+  return next !== previous
+    && previous.active
+    && next.effectId !== previous.effectId
+    && ["clear", "land", "over"].includes(next.lastEffect);
+}
+
 export default function FallingBlocks({ onBack }) {
   const [game, setGame] = useState(() => createGame());
   const [difficulty, setDifficulty] = useState("normal");
   const [bestScore, setBestScore] = useState(readBestScore);
+  const inputCooldownUntilRef = useRef(0);
   const board = useMemo(() => getVisibleBoard(game), [game]);
   const nextBoard = useMemo(
     () => getNextPieceBoard(game.nextType),
@@ -69,33 +78,57 @@ export default function FallingBlocks({ onBack }) {
   );
   const displayedBestScore = Math.max(bestScore, game.score);
 
+  const releaseInputCooldown = useCallback(() => {
+    inputCooldownUntilRef.current = 0;
+  }, []);
+
+  const holdInputAfterLock = useCallback(() => {
+    inputCooldownUntilRef.current = performance.now() + PIECE_INPUT_COOLDOWN_MS;
+  }, []);
+
+  const applyPieceAction = useCallback((transform) => {
+    setGame((current) => {
+      if (
+        current.status === "running"
+        && performance.now() < inputCooldownUntilRef.current
+      ) {
+        return current;
+      }
+      const next = transform(current);
+      if (didLockPiece(current, next)) holdInputAfterLock();
+      return next;
+    });
+  }, [holdInputAfterLock]);
+
   const moveLeft = useCallback(() => {
-    setGame((current) => movePiece(current, -1, 0));
-  }, []);
+    applyPieceAction((current) => movePiece(current, -1, 0));
+  }, [applyPieceAction]);
   const moveRight = useCallback(() => {
-    setGame((current) => movePiece(current, 1, 0));
-  }, []);
+    applyPieceAction((current) => movePiece(current, 1, 0));
+  }, [applyPieceAction]);
   const moveDown = useCallback(() => {
-    setGame((current) => softDrop(current));
-  }, []);
+    applyPieceAction((current) => softDrop(current));
+  }, [applyPieceAction]);
   const rotate = useCallback(() => {
-    setGame((current) => rotatePiece(current));
-  }, []);
+    applyPieceAction((current) => rotatePiece(current));
+  }, [applyPieceAction]);
   const drop = useCallback(() => {
-    setGame((current) => hardDrop(current));
-  }, []);
+    applyPieceAction((current) => hardDrop(current));
+  }, [applyPieceAction]);
   const pause = useCallback(() => {
     setGame((current) => togglePause(current));
   }, []);
   const begin = useCallback(() => {
+    releaseInputCooldown();
     setBestScore((current) => Math.max(current, game.score));
     setGame(startGame());
-  }, [game.score]);
+  }, [game.score, releaseInputCooldown]);
 
   const changeDifficulty = useCallback((nextDifficulty) => {
+    releaseInputCooldown();
     setDifficulty(nextDifficulty);
     setGame(createGame());
-  }, []);
+  }, [releaseInputCooldown]);
 
   useEffect(() => {
     if (game.status !== "running") return undefined;

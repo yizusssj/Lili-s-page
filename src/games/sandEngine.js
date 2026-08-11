@@ -38,9 +38,9 @@ export const SAND_DIFFICULTY = {
 };
 
 const NEIGHBORS = [
-  [-1, -1], [0, -1], [1, -1],
+  [0, -1],
   [-1, 0], [1, 0],
-  [-1, 1], [0, 1], [1, 1],
+  [0, 1],
 ];
 
 export function createSandBoard() {

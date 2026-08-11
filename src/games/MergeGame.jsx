@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import {
+  ArrowDown,
   ArrowLeft,
+  ArrowRight,
+  ArrowUp,
   Brain,
   Hand,
   Keyboard,
@@ -22,6 +25,12 @@ import useDirectionalGesture from "./useDirectionalGesture.js";
 
 const BEST_SCORES_KEY = "lili_game_2048_best_v1";
 const EMPTY_BEST_SCORES = { intense: 0, normal: 0, relaxed: 0 };
+const DIRECTION_ICONS = {
+  down: ArrowDown,
+  left: ArrowLeft,
+  right: ArrowRight,
+  up: ArrowUp,
+};
 
 function readBestScores() {
   return readJSON(
@@ -46,6 +55,7 @@ export default function MergeGame({ onBack }) {
   const [bestScores, setBestScores] = useState(readBestScores);
   const playing = ["paused", "running", "won"].includes(game.status);
   const displayedBest = Math.max(bestScores[difficulty] ?? 0, game.score);
+  const MoveIcon = game.lastDirection ? DIRECTION_ICONS[game.lastDirection] : null;
 
   const move = useCallback((direction) => {
     setGame((current) => moveMergeGame(current, direction));
@@ -159,7 +169,7 @@ export default function MergeGame({ onBack }) {
       <div className="blockGameLayout squareGameLayout">
         <div className="blockGameStage">
           <div
-            className={`mergeGameBoard${game.lastEffect === "merge" ? " mergeGameBoardMerged" : ""}`}
+            className={`mergeGameBoard${game.lastEffect === "merge" ? " mergeGameBoardMerged" : ""}${game.lastDirection ? ` mergeGameBoardMove mergeGameBoardMove-${game.lastDirection}` : ""}`}
             role="img"
             aria-label={`Tablero de 2048. Puntuación ${game.score}. Ficha máxima ${game.maxTile}.`}
             {...gestureHandlers}
@@ -183,6 +193,16 @@ export default function MergeGame({ onBack }) {
             {game.effectId > 0 && game.lastEffect === "merge" && game.lastGain > 0 && (
               <span key={`gain-${game.effectId}`} className="mergeGameGain" aria-hidden="true">
                 +{game.lastGain.toLocaleString("es-MX")}
+              </span>
+            )}
+
+            {MoveIcon && game.effectId > 0 && ["merge", "move"].includes(game.lastEffect) && (
+              <span
+                key={`direction-${game.effectId}-${game.lastDirection}`}
+                className={`mergeGameMoveHint mergeGameMoveHint-${game.lastDirection}`}
+                aria-hidden="true"
+              >
+                <MoveIcon size={34} strokeWidth={2.4} />
               </span>
             )}
 

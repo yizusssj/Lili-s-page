@@ -49,6 +49,19 @@ describe("sandEngine", () => {
     expect(result.board[isolatedRow * SAND_COLUMNS]).toBe(2);
   });
 
+  it("no cuenta puentes unidos solo por diagonales", () => {
+    const board = createSandBoard();
+    for (let column = 0; column < SAND_COLUMNS; column += 1) {
+      const row = column % 2 === 0 ? 80 : 81;
+      board[row * SAND_COLUMNS + column] = 3;
+    }
+
+    const result = clearConnectedSand(board);
+
+    expect(result.paths).toBe(0);
+    expect(result.cleared).toBe(0);
+  });
+
   it("convierte la pieza rígida en 144 granos sin premiar la caída", () => {
     const game = startSandGame("normal", () => 0);
     const lowered = softDropSandPiece(game, () => 0);

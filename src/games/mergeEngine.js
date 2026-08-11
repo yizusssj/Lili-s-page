@@ -34,6 +34,7 @@ export function createMergeGame(difficulty = "normal", random = Math.random) {
     difficulty: normalizedDifficulty,
     effectId: 0,
     lastEffect: null,
+    lastDirection: null,
     lastGain: 0,
     maxTile: Math.max(...board),
     moves: 0,
@@ -125,6 +126,7 @@ export function moveMergeGame(game, direction, random = Math.random) {
           ...game,
           effectId: game.effectId + 1,
           lastEffect: "over",
+          lastDirection: null,
           status: "over",
         };
   }
@@ -136,6 +138,7 @@ export function moveMergeGame(game, direction, random = Math.random) {
     ...game,
     board: spawned,
     effectId: game.effectId + 1,
+    lastDirection: direction,
     lastEffect: gained > 0 ? "merge" : "move",
     lastGain: gained,
     maxTile,

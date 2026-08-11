@@ -31,6 +31,7 @@ describe("mergeEngine", () => {
 
     expect(moved.board.slice(0, 4)).toEqual([4, 4, 0, 0]);
     expect(moved.score).toBe(8);
+    expect(moved.lastDirection).toBe("left");
     expect(moved.lastGain).toBe(8);
     expect(moved.moves).toBe(1);
   });
@@ -48,6 +49,7 @@ describe("mergeEngine", () => {
 
     const moved = moveMergeGame(game, "right", () => 0.5);
     expect(moved.score).toBe(0);
+    expect(moved.lastDirection).toBe("right");
     expect(moved.moves).toBe(1);
   });
 
