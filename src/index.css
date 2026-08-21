@@ -1917,7 +1917,7 @@ body.arcadeGameActive {
   min-width: 0;
   min-height: 0;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   border-radius: 15px;
   background: rgba(104, 78, 58, 0.22);
   box-shadow:
@@ -1926,10 +1926,13 @@ body.arcadeGameActive {
 }
 
 .mergeGameTile {
+  --tile-trail: rgba(246, 231, 213, 0.76);
   position: absolute;
   inset: 0;
   display: grid;
   place-items: center;
+  overflow: visible;
+  isolation: isolate;
   border: 1px solid rgba(255, 255, 255, 0.34);
   border-radius: inherit;
   background: #eee4da;
@@ -1940,19 +1943,33 @@ body.arcadeGameActive {
   font-size: clamp(20px, 6.5vw, 38px);
   font-weight: 850;
   letter-spacing: -0.055em;
+  transform: translateZ(0);
+}
+
+.mergeGameTileValue {
+  position: relative;
+  z-index: 3;
+}
+
+.mergeGameTile[data-spawned="true"] {
   animation: mergeTileArrive 190ms cubic-bezier(0.2, 0.88, 0.22, 1) both;
 }
 
-.mergeGameTile[data-value="4"] { background: #eadbc6; }
-.mergeGameTile[data-value="8"] { background: #f3b878; color: #fffaf2; }
-.mergeGameTile[data-value="16"] { background: #f29a64; color: #fffaf2; }
-.mergeGameTile[data-value="32"] { background: #ef785e; color: #fffaf2; }
-.mergeGameTile[data-value="64"] { background: #eb5f46; color: #fffaf2; }
-.mergeGameTile[data-value="128"] { background: #e9cc68; color: #fffdf4; font-size: clamp(18px, 5.8vw, 33px); }
-.mergeGameTile[data-value="256"] { background: #e5bc50; color: #fffdf4; font-size: clamp(18px, 5.8vw, 33px); }
-.mergeGameTile[data-value="512"] { background: #dfac38; color: #fffdf4; font-size: clamp(18px, 5.8vw, 33px); }
-.mergeGameTile[data-value="1024"] { background: #d99a2c; color: #fffdf4; font-size: clamp(15px, 5vw, 28px); }
+.mergeGameTile[data-merged="true"] {
+  animation: mergeTileMergePop 240ms cubic-bezier(0.2, 0.92, 0.2, 1.12) both;
+}
+
+.mergeGameTile[data-value="4"] { --tile-trail: rgba(234, 219, 198, 0.78); background: #eadbc6; }
+.mergeGameTile[data-value="8"] { --tile-trail: rgba(243, 184, 120, 0.76); background: #f3b878; color: #fffaf2; }
+.mergeGameTile[data-value="16"] { --tile-trail: rgba(242, 154, 100, 0.78); background: #f29a64; color: #fffaf2; }
+.mergeGameTile[data-value="32"] { --tile-trail: rgba(239, 120, 94, 0.78); background: #ef785e; color: #fffaf2; }
+.mergeGameTile[data-value="64"] { --tile-trail: rgba(235, 95, 70, 0.78); background: #eb5f46; color: #fffaf2; }
+.mergeGameTile[data-value="128"] { --tile-trail: rgba(233, 204, 104, 0.8); background: #e9cc68; color: #fffdf4; font-size: clamp(18px, 5.8vw, 33px); }
+.mergeGameTile[data-value="256"] { --tile-trail: rgba(229, 188, 80, 0.82); background: #e5bc50; color: #fffdf4; font-size: clamp(18px, 5.8vw, 33px); }
+.mergeGameTile[data-value="512"] { --tile-trail: rgba(223, 172, 56, 0.84); background: #dfac38; color: #fffdf4; font-size: clamp(18px, 5.8vw, 33px); }
+.mergeGameTile[data-value="1024"] { --tile-trail: rgba(217, 154, 44, 0.84); background: #d99a2c; color: #fffdf4; font-size: clamp(15px, 5vw, 28px); }
 .mergeGameTile[data-value="2048"] {
+  --tile-trail: rgba(255, 218, 82, 0.86);
   background: linear-gradient(145deg, #ffe88f, #e7a91e);
   color: #fffef7;
   font-size: clamp(15px, 5vw, 28px);
@@ -1962,6 +1979,7 @@ body.arcadeGameActive {
 }
 .mergeGameTile[data-value="4096"],
 .mergeGameTile[data-value="8192"] {
+  --tile-trail: rgba(143, 120, 232, 0.84);
   background: linear-gradient(145deg, #8f78e8, #5c43b5);
   color: white;
   font-size: clamp(14px, 4.5vw, 25px);
@@ -2008,16 +2026,20 @@ body.arcadeGameActive {
 .mergeGameTile[data-move-direction]::after {
   content: "";
   position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background: inherit;
-  filter: blur(6px);
+  inset: 7%;
+  z-index: 1;
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.7), transparent 34%),
+    var(--tile-trail);
+  filter: blur(10px) saturate(1.18);
   opacity: 0;
   pointer-events: none;
-  animation-duration: 180ms;
-  animation-timing-function: ease-out;
+  transform: translate3d(0, 0, 0) scale(1);
+  animation-duration: 210ms;
+  animation-timing-function: cubic-bezier(0.2, 0.82, 0.24, 1);
   animation-fill-mode: both;
+  will-change: opacity, transform, filter;
 }
 
 .mergeGameTile[data-move-direction="left"]::after  { animation-name: mergeTrailLeft; }
@@ -2078,6 +2100,12 @@ body.arcadeGameActive {
   to { filter: brightness(1); opacity: 1; transform: scale(1); }
 }
 
+@keyframes mergeTileMergePop {
+  0% { filter: brightness(1); transform: scale(0.96); }
+  45% { filter: brightness(1.16) saturate(1.08); transform: scale(1.08); }
+  100% { filter: brightness(1); transform: scale(1); }
+}
+
 @keyframes mergeGainRise {
   0% { opacity: 0; transform: translateY(8px) scale(0.7); }
   28% { opacity: 1; transform: translateY(0) scale(1.08); }
@@ -2110,23 +2138,27 @@ body.arcadeGameActive {
 }
 
 @keyframes mergeTrailLeft {
-  0%   { opacity: 0.55; transform: translateX(40%); }
-  100% { opacity: 0;    transform: translateX(60%); }
+  0% { opacity: 0; filter: blur(6px) saturate(1.1); transform: translate3d(36%, 0, 0) scaleX(0.72) scaleY(0.92); }
+  24% { opacity: 0.62; }
+  100% { opacity: 0; filter: blur(14px) saturate(1.28); transform: translate3d(8%, 0, 0) scaleX(1.38) scaleY(0.94); }
 }
 
 @keyframes mergeTrailRight {
-  0%   { opacity: 0.55; transform: translateX(-40%); }
-  100% { opacity: 0;    transform: translateX(-60%); }
+  0% { opacity: 0; filter: blur(6px) saturate(1.1); transform: translate3d(-36%, 0, 0) scaleX(0.72) scaleY(0.92); }
+  24% { opacity: 0.62; }
+  100% { opacity: 0; filter: blur(14px) saturate(1.28); transform: translate3d(-8%, 0, 0) scaleX(1.38) scaleY(0.94); }
 }
 
 @keyframes mergeTrailUp {
-  0%   { opacity: 0.55; transform: translateY(40%); }
-  100% { opacity: 0;    transform: translateY(60%); }
+  0% { opacity: 0; filter: blur(6px) saturate(1.1); transform: translate3d(0, 36%, 0) scaleX(0.92) scaleY(0.72); }
+  24% { opacity: 0.62; }
+  100% { opacity: 0; filter: blur(14px) saturate(1.28); transform: translate3d(0, 8%, 0) scaleX(0.94) scaleY(1.38); }
 }
 
 @keyframes mergeTrailDown {
-  0%   { opacity: 0.55; transform: translateY(-40%); }
-  100% { opacity: 0;    transform: translateY(-60%); }
+  0% { opacity: 0; filter: blur(6px) saturate(1.1); transform: translate3d(0, -36%, 0) scaleX(0.92) scaleY(0.72); }
+  24% { opacity: 0.62; }
+  100% { opacity: 0; filter: blur(14px) saturate(1.28); transform: translate3d(0, -8%, 0) scaleX(0.94) scaleY(1.38); }
 }
 
 @media (max-width: 720px) {

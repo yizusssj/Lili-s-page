@@ -33,6 +33,8 @@ describe("mergeEngine", () => {
     expect(moved.score).toBe(8);
     expect(moved.lastDirection).toBe("left");
     expect(moved.lastGain).toBe(8);
+    expect(moved.lastMergedIndexes).toEqual([0, 1]);
+    expect(moved.lastMovedIndexes).toEqual([0, 1]);
     expect(moved.moves).toBe(1);
   });
 
@@ -50,6 +52,9 @@ describe("mergeEngine", () => {
     const moved = moveMergeGame(game, "right", () => 0.5);
     expect(moved.score).toBe(0);
     expect(moved.lastDirection).toBe("right");
+    expect(moved.lastMergedIndexes).toEqual([]);
+    expect(moved.lastMovedIndexes).toEqual([3]);
+    expect(moved.lastSpawnedIndex).not.toBe(3);
     expect(moved.moves).toBe(1);
   });
 

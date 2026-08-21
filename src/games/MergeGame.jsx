@@ -46,7 +46,6 @@ export default function MergeGame({ onBack }) {
   const [bestScores, setBestScores] = useState(readBestScores);
   const playing = ["paused", "running", "won"].includes(game.status);
   const displayedBest = Math.max(bestScores[difficulty] ?? 0, game.score);
-  const moveDirection = ["merge", "move"].includes(game.lastEffect) ? game.lastDirection : null;
 
   const move = useCallback((direction) => {
     setGame((current) => moveMergeGame(current, direction));
@@ -160,26 +159,35 @@ export default function MergeGame({ onBack }) {
       <div className="blockGameLayout squareGameLayout">
         <div className="blockGameStage">
           <div
-            className={`mergeGameBoard${game.lastEffect === "merge" ? " mergeGameBoardMerged" : ""}${game.lastDirection ? ` mergeGameBoardMove mergeGameBoardMove-${game.lastDirection}` : ""}`}
+            className={`mergeGameBoard${game.lastEffect === "merge" ? " mergeGameBoardMerged" : ""}`}
             role="img"
             aria-label={`Tablero de 2048. Puntuación ${game.score}. Ficha máxima ${game.maxTile}.`}
             {...gestureHandlers}
           >
             <div className="mergeGameGrid" aria-hidden="true">
-              {game.board.map((value, index) => (
-                <span key={index} className="mergeGameCell">
-                  {value > 0 && (
-                    <strong
-                      key={`${game.effectId}-${index}-${value}`}
-                      className="mergeGameTile"
-                      data-value={Math.min(value, 8192)}
-                      data-move-direction={moveDirection}
-                    >
-                      {value}
-                    </strong>
-                  )}
-                </span>
-              ))}
+              {game.board.map((value, index) => {
+                const moved = (game.lastMovedIndexes ?? []).includes(index);
+                const merged = (game.lastMergedIndexes ?? []).includes(index);
+                const spawned = game.lastSpawnedIndex === index;
+                const animationKey = moved || merged || spawned ? game.effectId : "still";
+
+                return (
+                  <span key={index} className="mergeGameCell">
+                    {value > 0 && (
+                      <strong
+                        key={`${index}-${value}-${animationKey}`}
+                        className="mergeGameTile"
+                        data-value={Math.min(value, 8192)}
+                        data-move-direction={moved ? game.lastDirection : undefined}
+                        data-merged={merged ? "true" : undefined}
+                        data-spawned={spawned ? "true" : undefined}
+                      >
+                        <span className="mergeGameTileValue">{value}</span>
+                      </strong>
+                    )}
+                  </span>
+                );
+              })}
             </div>
 
             {game.effectId > 0 && game.lastEffect === "merge" && game.lastGain > 0 && (
