@@ -1961,11 +1961,11 @@ body.arcadeGameActive {
 }
 
 .mergeGameTile[data-moving-target="true"] {
-  animation: mergeTileRevealFromMotion 260ms cubic-bezier(0.2, 0.86, 0.2, 1) both;
+  animation: mergeTileRevealFromMotion 470ms cubic-bezier(0.2, 0.86, 0.2, 1) both;
 }
 
 .mergeGameTile[data-moving-target="true"][data-merged="true"] {
-  animation: mergeTileRevealMerge 310ms cubic-bezier(0.18, 0.94, 0.2, 1.14) both;
+  animation: mergeTileRevealMerge 520ms cubic-bezier(0.18, 0.94, 0.2, 1.14) both;
 }
 
 .mergeGameTile[data-value="4"] { --tile-trail: rgba(234, 219, 198, 0.78); background: #eadbc6; }
@@ -2045,7 +2045,7 @@ body.arcadeGameActive {
   opacity: 0;
   pointer-events: none;
   transform: translate3d(0, 0, 0) scale(1);
-  animation-duration: 210ms;
+  animation-duration: 360ms;
   animation-timing-function: cubic-bezier(0.2, 0.82, 0.24, 1);
   animation-fill-mode: both;
   will-change: opacity, transform, filter;
@@ -2068,6 +2068,44 @@ body.arcadeGameActive {
   pointer-events: none;
 }
 
+.mergeGameMotionLayer::before {
+  content: "";
+  position: absolute;
+  inset: -8%;
+  z-index: 0;
+  border-radius: 24px;
+  opacity: 0;
+  pointer-events: none;
+  filter: blur(18px) saturate(1.35);
+}
+
+.mergeGameMotionLayer-left::before,
+.mergeGameMotionLayer-right::before {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 234, 190, 0.16),
+    rgba(159, 228, 245, 0.18),
+    transparent
+  );
+}
+
+.mergeGameMotionLayer-up::before,
+.mergeGameMotionLayer-down::before {
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(255, 234, 190, 0.16),
+    rgba(159, 228, 245, 0.18),
+    transparent
+  );
+}
+
+.mergeGameMotionLayer-left::before { animation: mergeLayerSwipeLeft 520ms ease-out both; }
+.mergeGameMotionLayer-right::before { animation: mergeLayerSwipeRight 520ms ease-out both; }
+.mergeGameMotionLayer-up::before { animation: mergeLayerSwipeUp 520ms ease-out both; }
+.mergeGameMotionLayer-down::before { animation: mergeLayerSwipeDown 520ms ease-out both; }
+
 .mergeGameMotionCell {
   position: relative;
   min-width: 0;
@@ -2084,7 +2122,7 @@ body.arcadeGameActive {
     inset 0 2px 1px rgba(255, 255, 255, 0.56),
     0 12px 28px rgba(80, 52, 34, 0.24),
     0 0 18px var(--tile-trail);
-  animation: mergeMotionGhostSlide 260ms cubic-bezier(0.18, 0.9, 0.2, 1) both;
+  animation: mergeMotionGhostSlide var(--motion-duration, 440ms) cubic-bezier(0.16, 0.9, 0.18, 1) both;
   will-change: opacity, transform, filter;
 }
 
@@ -2100,7 +2138,50 @@ body.arcadeGameActive {
   filter: blur(12px) saturate(1.35);
   opacity: 0;
   pointer-events: none;
-  animation: mergeMotionGhostGlow 260ms cubic-bezier(0.18, 0.9, 0.2, 1) both;
+  animation: mergeMotionGhostGlow var(--motion-duration, 440ms) cubic-bezier(0.18, 0.9, 0.2, 1) both;
+}
+
+.mergeGameMotionGhost::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  border-radius: 999px;
+  opacity: 0;
+  pointer-events: none;
+  filter: blur(12px) saturate(1.45);
+  animation: mergeMotionTrailSmear var(--motion-duration, 440ms) cubic-bezier(0.16, 0.9, 0.18, 1) both;
+}
+
+.mergeGameMotionGhost[data-delta-x="1"]::after,
+.mergeGameMotionGhost[data-delta-x="2"]::after,
+.mergeGameMotionGhost[data-delta-x="3"]::after {
+  inset: 18% 50% 18% -92%;
+  background: linear-gradient(90deg, transparent, var(--tile-trail) 72%, rgba(255, 255, 255, 0.72));
+  transform-origin: right center;
+}
+
+.mergeGameMotionGhost[data-delta-x="-1"]::after,
+.mergeGameMotionGhost[data-delta-x="-2"]::after,
+.mergeGameMotionGhost[data-delta-x="-3"]::after {
+  inset: 18% -92% 18% 50%;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.72), var(--tile-trail) 28%, transparent);
+  transform-origin: left center;
+}
+
+.mergeGameMotionGhost[data-delta-y="1"]::after,
+.mergeGameMotionGhost[data-delta-y="2"]::after,
+.mergeGameMotionGhost[data-delta-y="3"]::after {
+  inset: -92% 18% 50% 18%;
+  background: linear-gradient(180deg, transparent, var(--tile-trail) 72%, rgba(255, 255, 255, 0.72));
+  transform-origin: center bottom;
+}
+
+.mergeGameMotionGhost[data-delta-y="-1"]::after,
+.mergeGameMotionGhost[data-delta-y="-2"]::after,
+.mergeGameMotionGhost[data-delta-y="-3"]::after {
+  inset: 50% 18% -92% 18%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), var(--tile-trail) 28%, transparent);
+  transform-origin: center top;
 }
 
 .mergeGameMotionGhost[data-delta-x="-3"] { --ghost-x: calc(-300% - var(--merge-gap) - var(--merge-gap) - var(--merge-gap)); }
@@ -2179,38 +2260,87 @@ body.arcadeGameActive {
 }
 
 @keyframes mergeTileRevealFromMotion {
-  0%, 54% { opacity: 0; filter: brightness(1.1); transform: scale(0.9); }
-  78% { opacity: 1; filter: brightness(1.08); transform: scale(1.035); }
+  0%, 68% { opacity: 0; filter: brightness(1.08); transform: scale(0.88); }
+  84% { opacity: 1; filter: brightness(1.08); transform: scale(1.035); }
   100% { opacity: 1; filter: brightness(1); transform: scale(1); }
 }
 
 @keyframes mergeTileRevealMerge {
-  0%, 45% { opacity: 0; filter: brightness(1.2) saturate(1.12); transform: scale(0.86); }
-  72% { opacity: 1; filter: brightness(1.2) saturate(1.08); transform: scale(1.12); }
+  0%, 62% { opacity: 0; filter: brightness(1.2) saturate(1.12); transform: scale(0.84); }
+  82% { opacity: 1; filter: brightness(1.2) saturate(1.08); transform: scale(1.12); }
   100% { opacity: 1; filter: brightness(1); transform: scale(1); }
 }
 
 @keyframes mergeMotionGhostSlide {
   0% {
-    opacity: 0.96;
+    opacity: 1;
     filter: brightness(1.02) saturate(1);
     transform: translate3d(0, 0, 0) scale(1);
   }
-  62% {
-    opacity: 0.92;
+  18% {
+    opacity: 1;
+    filter: brightness(1.08) saturate(1.04);
+    transform: translate3d(0, 0, 0) scale(1.025);
+  }
+  78% {
+    opacity: 1;
     filter: brightness(1.12) saturate(1.08);
   }
   100% {
-    opacity: 0;
+    opacity: 0.04;
     filter: brightness(1.22) saturate(1.16);
-    transform: translate3d(var(--ghost-x), var(--ghost-y), 0) scale(0.96);
+    transform: translate3d(var(--ghost-x), var(--ghost-y), 0) scale(0.985);
   }
 }
 
 @keyframes mergeMotionGhostGlow {
-  0% { opacity: 0.14; transform: scale(0.92); }
-  36% { opacity: 0.82; transform: scale(1.18); }
-  100% { opacity: 0; transform: scale(1.52); }
+  0% { opacity: 0.12; transform: scale(0.86); }
+  30% { opacity: 0.72; transform: scale(1.16); }
+  76% { opacity: 0.58; transform: scale(1.28); }
+  100% { opacity: 0; transform: scale(1.56); }
+}
+
+@keyframes mergeMotionTrailSmear {
+  0% {
+    opacity: 0;
+    transform: scaleX(0.28) scaleY(0.72);
+  }
+  16% {
+    opacity: 0.78;
+    transform: scaleX(0.92) scaleY(0.9);
+  }
+  72% {
+    opacity: 0.56;
+    transform: scaleX(var(--trail-scale, 1)) scaleY(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scaleX(var(--trail-scale, 1)) scaleY(0.82);
+  }
+}
+
+@keyframes mergeLayerSwipeLeft {
+  0% { opacity: 0; transform: translateX(16%) scaleX(0.82); }
+  28% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-16%) scaleX(1.12); }
+}
+
+@keyframes mergeLayerSwipeRight {
+  0% { opacity: 0; transform: translateX(-16%) scaleX(0.82); }
+  28% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(16%) scaleX(1.12); }
+}
+
+@keyframes mergeLayerSwipeUp {
+  0% { opacity: 0; transform: translateY(16%) scaleY(0.82); }
+  28% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-16%) scaleY(1.12); }
+}
+
+@keyframes mergeLayerSwipeDown {
+  0% { opacity: 0; transform: translateY(-16%) scaleY(0.82); }
+  28% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(16%) scaleY(1.12); }
 }
 
 @keyframes mergeGainRise {

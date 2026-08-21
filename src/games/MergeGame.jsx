@@ -200,12 +200,15 @@ export default function MergeGame({ onBack }) {
               {game.effectId > 0 && (game.lastMotionTiles ?? []).length > 0 && (
                 <div
                   key={`motion-${game.effectId}`}
-                  className="mergeGameMotionLayer"
+                  className={`mergeGameMotionLayer mergeGameMotionLayer-${game.lastDirection ?? "still"}`}
                   aria-hidden="true"
                 >
                   {game.lastMotionTiles.map((tile, tileIndex) => {
                     const from = getTilePosition(tile.fromIndex);
                     const to = getTilePosition(tile.toIndex);
+                    const deltaX = to.column - from.column;
+                    const deltaY = to.row - from.row;
+                    const distance = Math.max(Math.abs(deltaX), Math.abs(deltaY));
 
                     return (
                       <span
@@ -214,12 +217,14 @@ export default function MergeGame({ onBack }) {
                         style={{
                           gridColumn: String(from.column + 1),
                           gridRow: String(from.row + 1),
+                          "--motion-duration": `${360 + distance * 70}ms`,
+                          "--trail-scale": String(1 + distance * 0.44),
                         }}
                       >
                         <strong
                           className="mergeGameTile mergeGameMotionGhost"
-                          data-delta-x={to.column - from.column}
-                          data-delta-y={to.row - from.row}
+                          data-delta-x={deltaX}
+                          data-delta-y={deltaY}
                           data-merged={tile.merged ? "true" : undefined}
                           data-value={Math.min(tile.value, 8192)}
                         >
