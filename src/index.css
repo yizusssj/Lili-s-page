@@ -2005,55 +2005,25 @@ body.arcadeGameActive {
   animation: mergeBoardNudgeDown 190ms ease-out both;
 }
 
-.mergeGameMoveHint {
-  width: 76px;
-  height: 76px;
+.mergeGameTile[data-move-direction]::after {
+  content: "";
   position: absolute;
   inset: 0;
-  z-index: 5;
-  margin: auto;
-  display: grid;
-  place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.42);
-  border-radius: 22px;
-  background: rgba(255, 248, 221, 0.36);
-  color: #fff6cf;
-  box-shadow:
-    0 16px 34px rgba(83, 54, 34, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.42);
+  z-index: -1;
+  border-radius: inherit;
+  background: inherit;
+  filter: blur(6px);
+  opacity: 0;
   pointer-events: none;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  animation: mergeDirectionHint 420ms ease-out both;
+  animation-duration: 180ms;
+  animation-timing-function: ease-out;
+  animation-fill-mode: both;
 }
 
-.mergeGameMoveHint-left {
-  --hint-from-x: 30px;
-  --hint-from-y: 0px;
-  --hint-to-x: -62px;
-  --hint-to-y: 0px;
-}
-
-.mergeGameMoveHint-right {
-  --hint-from-x: -30px;
-  --hint-from-y: 0px;
-  --hint-to-x: 62px;
-  --hint-to-y: 0px;
-}
-
-.mergeGameMoveHint-up {
-  --hint-from-x: 0px;
-  --hint-from-y: 30px;
-  --hint-to-x: 0px;
-  --hint-to-y: -62px;
-}
-
-.mergeGameMoveHint-down {
-  --hint-from-x: 0px;
-  --hint-from-y: -30px;
-  --hint-to-x: 0px;
-  --hint-to-y: 62px;
-}
+.mergeGameTile[data-move-direction="left"]::after  { animation-name: mergeTrailLeft; }
+.mergeGameTile[data-move-direction="right"]::after { animation-name: mergeTrailRight; }
+.mergeGameTile[data-move-direction="up"]::after    { animation-name: mergeTrailUp; }
+.mergeGameTile[data-move-direction="down"]::after  { animation-name: mergeTrailDown; }
 
 .mergeGameOverlay {
   background: rgba(73, 54, 42, 0.72);
@@ -2139,19 +2109,24 @@ body.arcadeGameActive {
   38% { transform: translateY(7px); }
 }
 
-@keyframes mergeDirectionHint {
-  0% {
-    opacity: 0;
-    transform: translate(var(--hint-from-x), var(--hint-from-y)) scale(0.72);
-  }
-  34% {
-    opacity: 1;
-    transform: translate(0, 0) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: translate(var(--hint-to-x), var(--hint-to-y)) scale(1.08);
-  }
+@keyframes mergeTrailLeft {
+  0%   { opacity: 0.55; transform: translateX(40%); }
+  100% { opacity: 0;    transform: translateX(60%); }
+}
+
+@keyframes mergeTrailRight {
+  0%   { opacity: 0.55; transform: translateX(-40%); }
+  100% { opacity: 0;    transform: translateX(-60%); }
+}
+
+@keyframes mergeTrailUp {
+  0%   { opacity: 0.55; transform: translateY(40%); }
+  100% { opacity: 0;    transform: translateY(60%); }
+}
+
+@keyframes mergeTrailDown {
+  0%   { opacity: 0.55; transform: translateY(-40%); }
+  100% { opacity: 0;    transform: translateY(-60%); }
 }
 
 @media (max-width: 720px) {
@@ -2518,9 +2493,9 @@ body.arcadeGameActive {
   .snakeEatBurst i,
   .snakeGameBoardCrash,
   .mergeGameTile,
+  .mergeGameTile[data-move-direction]::after,
   .mergeGameGain,
   .mergeGameGrid,
-  .mergeGameMoveHint,
   .mergeGameBoardMerged {
     animation: none;
   }
