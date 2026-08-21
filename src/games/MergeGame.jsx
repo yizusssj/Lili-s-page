@@ -12,6 +12,7 @@ import {
 import { readJSON, writeJSON } from "../utils/storage.js";
 import DifficultyPicker from "./DifficultyPicker.jsx";
 import {
+  MERGE_SIZE,
   continueMergeGame,
   createMergeGame,
   moveMergeGame,
@@ -22,6 +23,13 @@ import useDirectionalGesture from "./useDirectionalGesture.js";
 
 const BEST_SCORES_KEY = "lili_game_2048_best_v1";
 const EMPTY_BEST_SCORES = { intense: 0, normal: 0, relaxed: 0 };
+
+function getTilePosition(index) {
+  return {
+    column: index % MERGE_SIZE,
+    row: Math.floor(index / MERGE_SIZE),
+  };
+}
 
 function readBestScores() {
   return readJSON(
@@ -180,6 +188,7 @@ export default function MergeGame({ onBack }) {
                         data-value={Math.min(value, 8192)}
                         data-move-direction={moved ? game.lastDirection : undefined}
                         data-merged={merged ? "true" : undefined}
+                        data-moving-target={moved ? "true" : undefined}
                         data-spawned={spawned ? "true" : undefined}
                       >
                         <span className="mergeGameTileValue">{value}</span>
@@ -188,6 +197,39 @@ export default function MergeGame({ onBack }) {
                   </span>
                 );
               })}
+              {game.effectId > 0 && (game.lastMotionTiles ?? []).length > 0 && (
+                <div
+                  key={`motion-${game.effectId}`}
+                  className="mergeGameMotionLayer"
+                  aria-hidden="true"
+                >
+                  {game.lastMotionTiles.map((tile, tileIndex) => {
+                    const from = getTilePosition(tile.fromIndex);
+                    const to = getTilePosition(tile.toIndex);
+
+                    return (
+                      <span
+                        key={`${tile.fromIndex}-${tile.toIndex}-${tile.value}-${tileIndex}`}
+                        className="mergeGameMotionCell"
+                        style={{
+                          gridColumn: String(from.column + 1),
+                          gridRow: String(from.row + 1),
+                        }}
+                      >
+                        <strong
+                          className="mergeGameTile mergeGameMotionGhost"
+                          data-delta-x={to.column - from.column}
+                          data-delta-y={to.row - from.row}
+                          data-merged={tile.merged ? "true" : undefined}
+                          data-value={Math.min(tile.value, 8192)}
+                        >
+                          <span className="mergeGameTileValue">{tile.value}</span>
+                        </strong>
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {game.effectId > 0 && game.lastEffect === "merge" && game.lastGain > 0 && (

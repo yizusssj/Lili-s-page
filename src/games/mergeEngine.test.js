@@ -34,6 +34,11 @@ describe("mergeEngine", () => {
     expect(moved.lastDirection).toBe("left");
     expect(moved.lastGain).toBe(8);
     expect(moved.lastMergedIndexes).toEqual([0, 1]);
+    expect(moved.lastMotionTiles).toEqual([
+      { fromIndex: 1, merged: true, toIndex: 0, value: 2 },
+      { fromIndex: 2, merged: true, toIndex: 1, value: 2 },
+      { fromIndex: 3, merged: true, toIndex: 1, value: 2 },
+    ]);
     expect(moved.lastMovedIndexes).toEqual([0, 1]);
     expect(moved.moves).toBe(1);
   });
@@ -53,6 +58,9 @@ describe("mergeEngine", () => {
     expect(moved.score).toBe(0);
     expect(moved.lastDirection).toBe("right");
     expect(moved.lastMergedIndexes).toEqual([]);
+    expect(moved.lastMotionTiles).toEqual([
+      { fromIndex: 0, merged: false, toIndex: 3, value: 2 },
+    ]);
     expect(moved.lastMovedIndexes).toEqual([3]);
     expect(moved.lastSpawnedIndex).not.toBe(3);
     expect(moved.moves).toBe(1);

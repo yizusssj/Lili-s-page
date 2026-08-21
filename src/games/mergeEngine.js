@@ -41,6 +41,7 @@ export function createMergeGame(difficulty = "normal", random = Math.random) {
     lastDirection: null,
     lastGain: 0,
     lastMergedIndexes: [],
+    lastMotionTiles: [],
     lastMovedIndexes: [],
     lastSpawnedIndex: null,
     maxTile: Math.max(...board),
@@ -134,17 +135,27 @@ export function moveMergeGame(game, direction, random = Math.random) {
   let gained = 0;
   const movedIndexes = new Set();
   const mergedIndexes = new Set();
+  const motionTiles = [];
 
   for (let index = 0; index < MERGE_SIZE; index += 1) {
     const result = collapseLineWithMotion(getLineEntries(game.board, direction, index));
     setLine(board, direction, index, result.line);
     gained += result.score;
 
-    result.motion.forEach(({ from, merged, offset }) => {
+    result.motion.forEach(({ from, merged, offset, value }) => {
       const finalIndex = getBoardIndex(direction, index, offset);
       const moved = merged || from.some((originIndex) => originIndex !== finalIndex);
       if (moved) movedIndexes.add(finalIndex);
       if (merged) mergedIndexes.add(finalIndex);
+      from.forEach((originIndex) => {
+        if (originIndex === finalIndex) return;
+        motionTiles.push({
+          fromIndex: originIndex,
+          merged,
+          toIndex: finalIndex,
+          value: merged ? value / 2 : value,
+        });
+      });
     });
   }
 
@@ -157,6 +168,7 @@ export function moveMergeGame(game, direction, random = Math.random) {
           lastEffect: "over",
           lastDirection: null,
           lastMergedIndexes: [],
+          lastMotionTiles: [],
           lastMovedIndexes: [],
           lastSpawnedIndex: null,
           status: "over",
@@ -174,6 +186,7 @@ export function moveMergeGame(game, direction, random = Math.random) {
     lastEffect: gained > 0 ? "merge" : "move",
     lastGain: gained,
     lastMergedIndexes: [...mergedIndexes],
+    lastMotionTiles: motionTiles,
     lastMovedIndexes: [...movedIndexes],
     lastSpawnedIndex: spawnedIndex,
     maxTile,
